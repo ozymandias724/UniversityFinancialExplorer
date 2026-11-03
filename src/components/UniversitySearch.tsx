@@ -1,7 +1,8 @@
 import type { Institution, RequestStatus } from '../types/education'
-import { REPORTING_YEAR, US_STATES } from '../services/educationData/metadata'
+import { US_STATES } from '../services/educationData/metadata'
 
 interface UniversitySearchProps {
+  reportingYear: number
   selectedStateFips: number | null
   onStateChange: (fips: number | null) => void
   query: string
@@ -17,6 +18,7 @@ interface UniversitySearchProps {
 }
 
 export function UniversitySearch({
+  reportingYear,
   selectedStateFips,
   onStateChange,
   query,
@@ -31,7 +33,7 @@ export function UniversitySearch({
   onInstitutionSelect,
 }: UniversitySearchProps) {
   return (
-    <section className="rounded-3xl border border-[#e1e6df] bg-white p-6 shadow-[0_12px_42px_rgba(27,48,38,0.05)] sm:p-8">
+    <section className="min-w-0 rounded-3xl border border-[#e1e6df] bg-white p-6 shadow-[0_12px_42px_rgba(27,48,38,0.05)] sm:p-8">
       <div className="mb-7 flex items-start gap-4">
         <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#e8f0e9] text-[#315940]">
           <svg
@@ -131,7 +133,7 @@ export function UniversitySearch({
         {directoryStatus === 'loading' && (
           <p className="flex items-center gap-3 rounded-xl bg-[#f7f9f6] px-4 py-4 text-sm text-[#52645a]">
             <span className="size-4 animate-spin rounded-full border-2 border-[#c8d6ca] border-t-[#416b4d]" />
-            Loading the {selectedStateName(selectedStateFips)} directory…
+            Loading the {reportingYear} {selectedStateName(selectedStateFips)} directory…
           </p>
         )}
         {directoryStatus === 'error' && (
@@ -212,7 +214,7 @@ export function UniversitySearch({
       </div>
 
       <p className="mt-5 border-t border-[#edf0eb] pt-4 text-xs text-[#819087]">
-        IPEDS reporting year: {REPORTING_YEAR}
+        IPEDS reporting year: {reportingYear}
       </p>
     </section>
   )

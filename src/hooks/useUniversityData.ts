@@ -5,9 +5,14 @@ import type {
   RequestStatus,
 } from '../types/education'
 import { getFinanceRecord } from '../services/educationData/finance'
+import {
+  DEFAULT_REPORTING_YEAR,
+  isSupportedReportingYear,
+} from '../services/educationData/metadata'
 import { getInstitutions } from '../services/educationData/universities'
 
 interface UniversityData {
+  reportingYear: number
   selectedStateFips: number | null
   institutions: Institution[]
   directoryStatus: RequestStatus
@@ -17,12 +22,14 @@ interface UniversityData {
   financeStatus: RequestStatus
   financeError: string | null
   selectState: (fips: number | null) => void
+  selectReportingYear: (year: number) => void
   selectInstitution: (institution: Institution) => void
   retryDirectory: () => void
   retryFinance: () => void
 }
 
 export function useUniversityData(): UniversityData {
+  const [reportingYear, setReportingYear] = useState(DEFAULT_REPORTING_YEAR)
   const [selectedStateFips, setSelectedStateFips] = useState<number | null>(null)
   const [institutions, setInstitutions] = useState<Institution[]>([])
   const [directoryStatus, setDirectoryStatus] = useState<RequestStatus>('idle')
@@ -48,7 +55,7 @@ export function useUniversityData(): UniversityData {
     setDirectoryStatus('loading')
     setDirectoryError(null)
 
-    getInstitutions(selectedStateFips, controller.signal)
+    getInstitutions(selectedStateFips, reportingYear, controller.signal)
       .then((result) => {
         setInstitutions(result)
         setDirectoryStatus('ready')
@@ -62,7 +69,7 @@ export function useUniversityData(): UniversityData {
       })
 
     return () => controller.abort()
-  }, [directoryAttempt, selectedStateFips])
+  }, [directoryAttempt, reportingYear, selectedStateFips])
 
   useEffect(() => {
     if (selectedInstitution === null) {
@@ -78,7 +85,7 @@ export function useUniversityData(): UniversityData {
     setFinanceStatus('loading')
     setFinanceError(null)
 
-    getFinanceRecord(selectedInstitution.unitid, controller.signal)
+    getFinanceRecord(selectedInstitution.unitid, reportingYear, controller.signal)
       .then((result) => {
         setFinanceRecord(result)
         setFinanceStatus('ready')
@@ -92,11 +99,18 @@ export function useUniversityData(): UniversityData {
       })
 
     return () => controller.abort()
-  }, [financeAttempt, selectedInstitution])
+  }, [financeAttempt, reportingYear, selectedInstitution])
 
   function selectState(fips: number | null): void {
     setSelectedStateFips(fips)
     setSelectedInstitution(null)
+  }
+
+  function selectReportingYear(year: number): void {
+    if (!isSupportedReportingYear(year)) {
+      throw new Error('Choose a supported reporting year.')
+    }
+    setReportingYear(year)
   }
 
   function selectInstitution(institution: Institution): void {
@@ -112,6 +126,7 @@ export function useUniversityData(): UniversityData {
   }
 
   return {
+    reportingYear,
     selectedStateFips,
     institutions,
     directoryStatus,
@@ -121,6 +136,7 @@ export function useUniversityData(): UniversityData {
     financeStatus,
     financeError,
     selectState,
+    selectReportingYear,
     selectInstitution,
     retryDirectory,
     retryFinance,

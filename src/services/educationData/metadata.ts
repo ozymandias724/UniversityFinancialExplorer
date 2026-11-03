@@ -1,6 +1,9 @@
 export const API_ORIGIN = 'https://educationdata.urban.org'
-// Keep the reporting year in one place so directory and finance requests stay aligned.
-export const REPORTING_YEAR = 2023
+// Offer the ten latest years with finance records confirmed for the Harvard and UMass test cases.
+export const REPORTING_YEARS = [
+  2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014,
+] as const
+export const DEFAULT_REPORTING_YEAR = 2023
 
 // The directory API may return a whole state's records in one response; these are client-side hard stops.
 export const MAX_DIRECTORY_RECORDS = 200
@@ -75,4 +78,8 @@ export const US_STATES = [
 
 export function isSupportedStateFips(value: number): boolean {
   return US_STATES.some((state) => state.fips === value)
+}
+
+export function isSupportedReportingYear(value: number): boolean {
+  return REPORTING_YEARS.some((year) => year === value)
 }

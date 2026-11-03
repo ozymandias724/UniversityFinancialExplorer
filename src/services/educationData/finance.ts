@@ -3,39 +3,44 @@ import { fetchApiJson } from './client'
 import {
   API_ORIGIN,
   MAX_FINANCE_RESPONSE_BYTES,
-  REPORTING_YEAR,
+  isSupportedReportingYear,
 } from './metadata'
 
-const FINANCE_PATH = `/api/v1/college-university/ipeds/finance/${REPORTING_YEAR}/`
 // Null is cached as "no record"; it is distinct from a failed request and from numeric zeroes.
-const financeCache = new Map<number, FinanceRecord | null>()
+const financeCache = new Map<string, FinanceRecord | null>()
 
 export async function getFinanceRecord(
   unitid: number,
+  reportingYear: number,
   signal?: AbortSignal,
 ): Promise<FinanceRecord | null> {
   if (!Number.isInteger(unitid) || unitid <= 0) {
     throw new Error('Choose a valid institution before requesting financial data.')
   }
+  if (!isSupportedReportingYear(reportingYear)) {
+    throw new Error('Choose a supported reporting year before requesting financial data.')
+  }
   signal?.throwIfAborted()
 
-  if (financeCache.has(unitid)) {
-    return financeCache.get(unitid) ?? null
+  const cacheKey = `${reportingYear}:${unitid}`
+  if (financeCache.has(cacheKey)) {
+    return financeCache.get(cacheKey) ?? null
   }
 
-  const url = new URL(FINANCE_PATH, API_ORIGIN)
+  const financePath = `/api/v1/college-university/ipeds/finance/${reportingYear}/`
+  const url = new URL(financePath, API_ORIGIN)
   url.searchParams.set('unitid', String(unitid))
 
   const { data } = await fetchApiJson(url, {
     signal,
     maximumBytes: MAX_FINANCE_RESPONSE_BYTES,
-    expectedPath: FINANCE_PATH,
+    expectedPath: financePath,
   })
   const envelope = parseApiResponse(data)
 
   // A missing reporting record is valid API data; multiple rows for one UNITID/year are not expected.
   if (envelope.count === 0 && envelope.results.length === 0) {
-    financeCache.set(unitid, null)
+    financeCache.set(cacheKey, null)
     return null
   }
   if (envelope.count !== 1 || envelope.results.length !== 1) {
@@ -45,11 +50,11 @@ export async function getFinanceRecord(
   }
 
   const record = parseFinanceRecord(envelope.results[0])
-  if (record.unitid !== unitid || record.year !== REPORTING_YEAR) {
+  if (record.unitid !== unitid || record.year !== reportingYear) {
     throw new Error('The API returned a finance record for a different institution or year.')
   }
 
-  financeCache.set(unitid, record)
+  financeCache.set(cacheKey, record)
   return record
 }
 
@@ -98,6 +103,22 @@ function parseFinanceRecord(data: unknown): FinanceRecord {
     liabilities: requiredNullableNumber(data, 'liabilities'),
     endowment_end: requiredNullableNumber(data, 'endowment_end'),
     est_fte: requiredNullableNumber(data, 'est_fte'),
+    rev_tuition_fees_net: requiredNullableNumber(data, 'rev_tuition_fees_net'),
+    rev_appropriations_state: requiredNullableNumber(data, 'rev_appropriations_state'),
+    rev_fed_approps_grants: requiredNullableNumber(data, 'rev_fed_approps_grants'),
+    rev_gifts_grants_contracts: requiredNullableNumber(data, 'rev_gifts_grants_contracts'),
+    rev_auxiliary_enterprises_net: requiredNullableNumber(
+      data,
+      'rev_auxiliary_enterprises_net',
+    ),
+    rev_investment_return: requiredNullableNumber(data, 'rev_investment_return'),
+    exp_instruc_total: requiredNullableNumber(data, 'exp_instruc_total'),
+    exp_research_total: requiredNullableNumber(data, 'exp_research_total'),
+    exp_pub_serv_total: requiredNullableNumber(data, 'exp_pub_serv_total'),
+    exp_acad_supp_total: requiredNullableNumber(data, 'exp_acad_supp_total'),
+    exp_student_serv_total: requiredNullableNumber(data, 'exp_student_serv_total'),
+    exp_inst_supp_total: requiredNullableNumber(data, 'exp_inst_supp_total'),
+    exp_aux_ent_total: requiredNullableNumber(data, 'exp_aux_ent_total'),
   }
 }
 

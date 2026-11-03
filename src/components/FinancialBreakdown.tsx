@@ -1,0 +1,186 @@
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  LabelList,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
+import type { FinanceRecord } from '../types/education'
+
+interface FinanceCategory {
+  key: keyof FinanceRecord
+  label: string
+}
+
+interface FinancialBreakdownProps {
+  record: FinanceRecord
+}
+
+const revenueCategories = [
+  { key: 'rev_tuition_fees_net', label: 'Net tuition and fees' },
+  { key: 'rev_appropriations_state', label: 'State appropriations' },
+  { key: 'rev_fed_approps_grants', label: 'Federal appropriations and grants' },
+  { key: 'rev_gifts_grants_contracts', label: 'Gifts, grants, and contracts' },
+  { key: 'rev_auxiliary_enterprises_net', label: 'Auxiliary enterprises, net' },
+  { key: 'rev_investment_return', label: 'Investment return' },
+] as const satisfies readonly FinanceCategory[]
+
+const expenseCategories = [
+  { key: 'exp_instruc_total', label: 'Instruction' },
+  { key: 'exp_research_total', label: 'Research' },
+  { key: 'exp_pub_serv_total', label: 'Public service' },
+  { key: 'exp_acad_supp_total', label: 'Academic support' },
+  { key: 'exp_student_serv_total', label: 'Student services' },
+  { key: 'exp_inst_supp_total', label: 'Institutional support' },
+  { key: 'exp_aux_ent_total', label: 'Auxiliary enterprises' },
+] as const satisfies readonly FinanceCategory[]
+
+const currencyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+})
+
+const compactCurrencyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+})
+
+export function FinancialBreakdown({ record }: FinancialBreakdownProps) {
+  return (
+    <section className="mt-8 border-t border-[#edf0eb] pt-7">
+      <div className="mb-5">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#63806c]">
+          Where the money comes from and goes
+        </p>
+        <h3 className="text-lg font-semibold tracking-tight text-[#23372a]">
+          Selected reported categories
+        </h3>
+        <p className="mt-2 text-sm leading-6 text-[#758279]">
+          These categories are not a complete breakdown and should not be added
+          together as totals. A missing value means it was not reported.
+        </p>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <CategoryChart
+          categories={revenueCategories}
+          color="#5a8963"
+          record={record}
+          title="Revenue"
+        />
+        <CategoryChart
+          categories={expenseCategories}
+          color="#7595ad"
+          record={record}
+          title="Expenses"
+        />
+      </div>
+
+      <p className="mt-4 rounded-xl bg-[#f7f9f6] px-4 py-3 text-xs leading-5 text-[#718078]">
+        Investment returns can include valuation changes, so they may not
+        represent recurring revenue. Values are shown as reported by IPEDS.
+      </p>
+    </section>
+  )
+}
+
+interface CategoryChartProps {
+  title: string
+  color: string
+  categories: readonly FinanceCategory[]
+  record: FinanceRecord
+}
+
+function CategoryChart({ title, color, categories, record }: CategoryChartProps) {
+  const data = categories.flatMap((category) => {
+    const amount = record[category.key]
+    return typeof amount === 'number'
+      ? [{ name: category.label, amount }]
+      : []
+  })
+  const unavailableCategories = categories.filter(
+    (category) => record[category.key] === null,
+  )
+
+  return (
+    <section
+      aria-label={`${title} categories for ${record.year}`}
+      className="rounded-2xl border border-[#e8ece7] bg-[#fbfcfa] p-4"
+    >
+      <h4 className="mb-1 text-sm font-semibold text-[#344a3a]">{title}</h4>
+      {data.length > 0 ? (
+        <div
+          aria-label={`${title} by category. Focus the chart and use arrow keys to explore values.`}
+          className="mt-2 h-[240px] w-full"
+          role="img"
+        >
+          <ResponsiveContainer height="100%" width="100%">
+            <BarChart
+              accessibilityLayer
+              data={data}
+              layout="vertical"
+              margin={{ top: 4, right: 48, bottom: 4, left: 0 }}
+            >
+              <CartesianGrid horizontal={false} stroke="#e8ece7" />
+              <XAxis
+                axisLine={false}
+                domain={['auto', 'auto']}
+                tick={{ fill: '#829087', fontSize: 10 }}
+                tickFormatter={(value: number) =>
+                  compactCurrencyFormatter.format(value)
+                }
+                tickLine={false}
+                type="number"
+              />
+              <YAxis
+                axisLine={false}
+                dataKey="name"
+                tick={{ fill: '#596b60', fontSize: 11 }}
+                tickLine={false}
+                type="category"
+                width={144}
+              />
+              <Tooltip
+                contentStyle={{
+                  border: '1px solid #e1e6df',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                }}
+                formatter={(value) =>
+                  currencyFormatter.format(Number(value ?? 0))
+                }
+                labelStyle={{ color: '#344a3a', fontWeight: 600 }}
+              />
+              <Bar dataKey="amount" fill={color} maxBarSize={20} radius={[0, 5, 5, 0]}>
+                <LabelList
+                  dataKey="amount"
+                  fill="#52645a"
+                  formatter={(value) =>
+                    compactCurrencyFormatter.format(Number(value))
+                  }
+                  position="right"
+                  style={{ fontSize: 10 }}
+                />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <p className="rounded-xl bg-white px-3 py-4 text-sm text-[#718078]">
+          No category values were reported for this year.
+        </p>
+      )}
+      {unavailableCategories.length > 0 && (
+        <p className="mt-3 text-xs leading-5 text-[#819087]">
+          Not reported: {unavailableCategories.map((category) => category.label).join(', ')}.
+        </p>
+      )}
+    </section>
+  )
+}

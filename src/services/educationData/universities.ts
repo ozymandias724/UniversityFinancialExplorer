@@ -6,13 +6,12 @@ import {
   MAX_DIRECTORY_PAGES,
   MAX_DIRECTORY_RECORDS,
   MAX_DIRECTORY_RESPONSE_BYTES,
-  REPORTING_YEAR,
   isSupportedStateFips,
+  isSupportedReportingYear,
 } from './metadata'
 
-const DIRECTORY_PATH = `/api/v1/college-university/ipeds/directory/${REPORTING_YEAR}/`
 // Cache only complete, validated state directories; incomplete responses must be retried.
-const directoryCache = new Map<number, Institution[]>()
+const directoryCache = new Map<string, Institution[]>()
 const REQUIRED_DIRECTORY_FILTERS = [
   ['degree_granting', '1'],
   ['currently_active_ipeds', '1'],
@@ -21,19 +20,25 @@ const REQUIRED_DIRECTORY_FILTERS = [
 
 export async function getInstitutions(
   stateFips: number,
+  reportingYear: number,
   signal?: AbortSignal,
 ): Promise<Institution[]> {
   if (!isSupportedStateFips(stateFips)) {
     throw new Error('Choose a valid state before searching institutions.')
   }
+  if (!isSupportedReportingYear(reportingYear)) {
+    throw new Error('Choose a supported reporting year before searching institutions.')
+  }
   signal?.throwIfAborted()
 
-  const cachedInstitutions = directoryCache.get(stateFips)
+  const cacheKey = `${reportingYear}:${stateFips}`
+  const cachedInstitutions = directoryCache.get(cacheKey)
   if (cachedInstitutions) {
     return cachedInstitutions
   }
 
-  const initialUrl = new URL(DIRECTORY_PATH, API_ORIGIN)
+  const directoryPath = `/api/v1/college-university/ipeds/directory/${reportingYear}/`
+  const initialUrl = new URL(directoryPath, API_ORIGIN)
   initialUrl.searchParams.set('fips', String(stateFips))
   // Name search is not supported server-side, so these scope filters keep local search bounded.
   initialUrl.searchParams.set('degree_granting', '1')
@@ -72,7 +77,7 @@ export async function getInstitutions(
       const { data, bytesRead } = await fetchApiJson(nextUrl, {
         signal: requestSignal,
         maximumBytes: remainingBytes,
-        expectedPath: DIRECTORY_PATH,
+        expectedPath: directoryPath,
       })
       const envelope = parseApiResponse(data)
       totalBytes += bytesRead
@@ -98,7 +103,7 @@ export async function getInstitutions(
       }
 
       nextUrl = envelope.next
-        ? resolveApiNextUrl(envelope.next, DIRECTORY_PATH, nextUrl, [
+        ? resolveApiNextUrl(envelope.next, directoryPath, nextUrl, [
             ['fips', String(stateFips)],
             ...REQUIRED_DIRECTORY_FILTERS,
           ])
@@ -124,7 +129,7 @@ export async function getInstitutions(
   }
 
   // Only cache after every page is received and the result count agrees with the API's advertised count.
-  directoryCache.set(stateFips, institutions)
+  directoryCache.set(cacheKey, institutions)
   return institutions
 }
 

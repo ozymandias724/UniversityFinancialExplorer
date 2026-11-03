@@ -1,8 +1,18 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { UniversitySearch } from './components/UniversitySearch'
 import { useUniversityData } from './hooks/useUniversityData'
-import { REPORTING_YEAR, SEARCH_RESULT_LIMIT, US_STATES } from './services/educationData/metadata'
+import {
+  REPORTING_YEARS,
+  SEARCH_RESULT_LIMIT,
+  US_STATES,
+} from './services/educationData/metadata'
 import type { FinanceRecord } from './types/education'
+
+const FinancialBreakdown = lazy(() =>
+  import('./components/FinancialBreakdown').then((module) => ({
+    default: module.FinancialBreakdown,
+  })),
+)
 
 const financialMetrics = [
   { key: 'total_revenues_additions', label: 'Total revenues and additions' },
@@ -26,6 +36,7 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 export default function App() {
   const [query, setQuery] = useState('')
   const {
+    reportingYear,
     selectedStateFips,
     institutions,
     directoryStatus,
@@ -35,6 +46,7 @@ export default function App() {
     financeStatus,
     financeError,
     selectState,
+    selectReportingYear,
     selectInstitution,
     retryDirectory,
     retryFinance,
@@ -67,7 +79,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#f5f6f2]">
       <header className="border-b border-[#e4e9e2] bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-start gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <a className="flex items-center gap-3 no-underline" href="/" aria-label="University Financial Explorer home">
             <span className="flex size-10 items-center justify-center rounded-xl bg-[#244b35] text-white">
               <svg
@@ -94,9 +106,21 @@ export default function App() {
               </span>
             </span>
           </a>
-          <span className="hidden rounded-full border border-[#dce7dc] bg-[#f6faf5] px-3 py-1.5 text-xs font-medium text-[#466b50] sm:inline-flex">
-            IPEDS · {REPORTING_YEAR}
-          </span>
+          <label className="flex items-center gap-2 text-xs font-medium text-[#607266]">
+            Reporting year
+            <select
+              aria-label="Reporting year"
+              className="rounded-lg border border-[#dce3db] bg-[#fbfcfa] px-3 py-2 text-sm font-semibold text-[#315940] outline-none focus:border-[#527c5d] focus:ring-4 focus:ring-[#527c5d]/10"
+              onChange={(event) => selectReportingYear(Number(event.target.value))}
+              value={reportingYear}
+            >
+              {REPORTING_YEARS.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </header>
 
@@ -109,13 +133,13 @@ export default function App() {
             Follow the numbers behind higher education.
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-[#65756a]">
-            Start with a college or university to explore its reported financial
-            profile. Choose a state first so every directory request stays
-            focused and fast.
+            Choose a reporting year and state, then find a college or university
+            to explore its reported financial profile. State filters keep every
+            directory request focused and fast.
           </p>
         </div>
 
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+        <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
           <UniversitySearch
             directoryError={directoryError}
             directoryStatus={directoryStatus}
@@ -127,6 +151,7 @@ export default function App() {
             onQueryChange={setQuery}
             onStateChange={handleStateChange}
             query={query}
+            reportingYear={reportingYear}
             selectedStateFips={selectedStateFips}
             selectedUnitid={selectedInstitution?.unitid ?? null}
           />
@@ -137,6 +162,7 @@ export default function App() {
             financeStatus={financeStatus}
             institutionName={selectedInstitution?.name ?? null}
             onRetry={retryFinance}
+            reportingYear={reportingYear}
             stateFips={selectedStateFips}
           />
         </div>
@@ -163,6 +189,7 @@ export default function App() {
 
 interface FinancialProfileProps {
   institutionName: string | null
+  reportingYear: number
   stateFips: number | null
   financeStatus: 'idle' | 'loading' | 'ready' | 'error'
   financeError: string | null
@@ -172,6 +199,7 @@ interface FinancialProfileProps {
 
 function FinancialProfile({
   institutionName,
+  reportingYear,
   stateFips,
   financeStatus,
   financeError,
@@ -182,7 +210,7 @@ function FinancialProfile({
     US_STATES.find((state) => state.fips === stateFips)?.name ?? null
 
   return (
-    <section className="min-h-[510px] overflow-hidden rounded-3xl border border-[#e1e6df] bg-white shadow-[0_12px_42px_rgba(27,48,38,0.05)]">
+    <section className="min-h-[510px] min-w-0 overflow-hidden rounded-3xl border border-[#e1e6df] bg-white shadow-[0_12px_42px_rgba(27,48,38,0.05)]">
       <div className="border-b border-[#edf0eb] px-6 py-6 sm:px-8">
         <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#63806c]">
           Financial profile
@@ -192,7 +220,7 @@ function FinancialProfile({
         </h2>
         <p className="mt-2 text-sm text-[#758279]">
           {institutionName
-            ? `IPEDS reporting year ${REPORTING_YEAR}`
+            ? `IPEDS reporting year ${reportingYear}`
             : 'Select an institution to retrieve its finance record.'}
         </p>
       </div>
@@ -256,7 +284,7 @@ function FinancialProfile({
         {institutionName && financeStatus === 'ready' && !financeRecord && (
           <div className="rounded-xl border border-[#e8ece7] bg-[#f7f9f6] px-4 py-4 text-sm leading-6 text-[#68786e]">
             {/* No record means data is unavailable for this year, not that the institution had no activity. */}
-            No finance record is available for this institution in {REPORTING_YEAR}.
+            No finance record is available for this institution in {reportingYear}.
             That does not mean the institution has no financial activity.
           </div>
         )}
@@ -303,10 +331,18 @@ function FinancialProfile({
                 </span>
               </p>
             )}
+            <Suspense
+              fallback={
+                <p className="mt-8 border-t border-[#edf0eb] pt-5 text-sm text-[#718078]">
+                  Loading category charts…
+                </p>
+              }
+            >
+              <FinancialBreakdown record={financeRecord} />
+            </Suspense>
             <p className="mt-4 text-xs leading-5 text-[#819087]">
               Values are reported by IPEDS. Categories may reflect different
-              accounting treatments; derived totals and comparisons are not
-              included in this initial view.
+              accounting treatments; the selected categories are not summed.
             </p>
           </>
         )}

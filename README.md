@@ -97,6 +97,22 @@ Both finance requests returned a single record with the expected financial data 
 
 These tests establish a working directory-to-finance lookup process. They do not establish that every institution in the directory has a finance record for every reporting year.
 
+### Reporting-Year Coverage Check
+
+Bounded requests checked the filtered Massachusetts directory and the individual
+finance records for Harvard (UNITID `166027`) and UMass Amherst (UNITID
+`166629`) for 2014–2026. Both sample institutions returned one finance record
+for every year from 2014 through 2023; neither returned a finance record for
+2024, 2025, or 2026. The directory endpoint continued to return Massachusetts
+institutions in some of those later years, so directory availability alone is
+not evidence that financial records are available.
+
+The app's year selector therefore offers 2014–2023 and defaults to 2023. The
+key finance fields used by the app were present in the two sample records
+throughout that range, but some values are null—for example, Harvard state
+appropriations and UMass net income. This is a practical test window, not a
+guarantee that every institution reports every year or field.
+
 ### Institution Search Considerations
 
 The directory endpoint supports several useful filters, but `inst_name` is not a supported server-side filter.
@@ -133,9 +149,12 @@ The initial application will display one reporting year at a time.
 
 There will be no historical trend charts or year comparison controls in the first release.
 
-The reporting year should be centrally configurable rather than scattered throughout the application.
+The reporting year should be centrally configured and apply consistently to
+both directory and finance requests.
 
-2023 is the reporting year used in the initial successful API tests. The latest available reporting year should be confirmed before choosing the production default.
+2023 is the current default. The selector offers the ten most recent years
+confirmed for the Harvard and UMass Amherst test cases: 2014 through 2023.
+Missing records and values should remain clearly identified as unavailable.
 
 ## Financial Dashboard
 
@@ -224,17 +243,19 @@ The dashboard should favor clear, defensible metrics over displaying every avail
 - **Vite** — Development server and build tooling
 - **TypeScript** — Type safety
 - **Tailwind CSS** — Styling
-- **Recharts** — Planned for the dashboard visualization milestone
+- **Recharts** — Financial category charts
 - **Urban Institute Education Data API** — Institutional and financial data
 
 The initial application will be client-side only, with no custom backend or database.
 
 ## Current Implementation
 
-The initial app lets a user choose a state, search that state's active,
-degree-granting, four-year institutions locally, and select an institution to
-request its finance record. It shows a small set of reported financial figures;
-charts and the full dashboard remain deferred.
+The app lets a user select a reporting year, choose a state, search that
+state's active, degree-granting, four-year institutions locally, and select an
+institution to request its finance record for that year. The financial
+profile includes headline figures and charts for selected reported revenue
+and expense categories. Multi-year comparisons and the full dashboard remain
+deferred.
 
 The directory request always includes `fips`, `degree_granting=1`,
 `currently_active_ipeds=1`, and `institution_level=4`. The directory endpoint
@@ -247,10 +268,10 @@ seconds; successful directories and finance records are cached for the current
 browser session. If a limit is reached, the app displays an error instead of
 continuing with a broad query.
 
-The reporting year is configured in
-[`src/services/educationData/metadata.ts`](./src/services/educationData/metadata.ts)
-and currently defaults to 2023 for the validated Harvard and UMass Amherst
-requests.
+The available years and default are configured in
+[`src/services/educationData/metadata.ts`](./src/services/educationData/metadata.ts).
+Directory and finance caches are keyed by year so switching years retrieves
+the corresponding records.
 
 ### Run Locally
 
@@ -272,10 +293,7 @@ Suggested structure:
 src/
 ├── components/
 │   ├── UniversitySearch.tsx
-│   ├── FinancialOverview.tsx
-│   ├── RevenueChart.tsx
-│   ├── ExpenseChart.tsx
-│   └── AdditionalFinancialInfo.tsx
+│   └── FinancialBreakdown.tsx
 ├── services/
 │   └── educationData/
 │       ├── client.ts
@@ -297,7 +315,7 @@ src/
 | File | Responsibility |
 |---|---|
 | `client.ts` | Shared API request handling, URL construction, and error handling |
-| `metadata.ts` | API configuration, reporting year, and shared constants |
+| `metadata.ts` | API configuration, supported reporting years, and shared constants |
 | `universities.ts` | Retrieve and filter the institution directory |
 | `finance.ts` | Retrieve financial records for selected institutions |
 | `education.ts` | TypeScript definitions for API responses and application data |
