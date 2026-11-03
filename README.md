@@ -254,8 +254,12 @@ The app lets a user select a reporting year, choose a state, search that
 state's active, degree-granting, four-year institutions locally, and select an
 institution to request its finance record for that year. The financial
 profile includes headline figures and charts for selected reported revenue
-and expense categories. Multi-year comparisons and the full dashboard remain
-deferred.
+and expense categories, plus a revenue-coverage donut showing expenses as a
+share of reported revenue. The donut is explicitly a ratio, not a financial
+health score or reported net income. When reported expenses exceed revenue,
+the inner ring fills and a red outer ring visualizes the overrun; the center
+percentage continues to show the full reported ratio. Multi-year comparisons
+and the full dashboard remain deferred.
 
 The directory request always includes `fips`, `degree_granting=1`,
 `currently_active_ipeds=1`, and `institution_level=4`. The directory endpoint
