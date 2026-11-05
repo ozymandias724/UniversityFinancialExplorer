@@ -80,7 +80,7 @@ export default function App() {
     <div className="min-h-screen bg-[#f5f6f2]">
       <header className="border-b border-[#e4e9e2] bg-white">
         <div className="mx-auto flex max-w-7xl flex-col items-start gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-          <a className="flex items-center gap-3 no-underline" href="/" aria-label="University Financial Explorer home">
+          <a className="flex items-center gap-3 no-underline" href={import.meta.env.BASE_URL} aria-label="University Financial Explorer home">
             <span className="flex size-10 items-center justify-center rounded-xl bg-[#244b35] text-white">
               <svg
                 aria-hidden="true"

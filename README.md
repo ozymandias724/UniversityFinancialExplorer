@@ -287,6 +287,13 @@ npm run dev
 The Vite development server prints the local URL. Use `npm run build` to
 type-check and create a production build, or `npm run lint` to run Oxlint.
 
+### Production Build
+
+The production build is configured for `/university-finances/`. Run
+`npm run build` and upload the contents of `dist/` to the matching directory
+on the web host. The Vite preview server can be used to check the built app
+locally with `npm run preview`.
+
 ## Initial Architecture
 
 Keep API communication separate from UI components.
