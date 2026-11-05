@@ -125,21 +125,20 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-7xl px-5 pb-16 pt-10 sm:px-8 sm:pt-14">
-        <div className="mb-9 max-w-2xl">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#65806c]">
-            Institutional finance, in context
-          </p>
-          <h1 className="text-3xl font-semibold leading-tight tracking-[-0.035em] text-[#17241f] sm:text-4xl">
-            Follow the numbers behind higher education.
-          </h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-[#65756a]">
-            Choose a reporting year and state, then find a college or university
-            to explore its reported financial profile. State filters keep every
-            directory request focused and fast.
-          </p>
-        </div>
-
-        <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+        <section className="mb-9 grid min-w-0 items-center gap-8 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <div className="max-w-2xl">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#65806c]">
+              Institutional finance, in context
+            </p>
+            <h1 className="text-3xl font-semibold leading-tight tracking-[-0.035em] text-[#17241f] sm:text-4xl">
+              Follow the numbers behind higher education.
+            </h1>
+            <p className="mt-4 max-w-xl text-base leading-7 text-[#65756a]">
+              Choose a reporting year and state, then find a college or
+              university to explore its reported financial profile. State
+              filters keep every directory request focused and fast.
+            </p>
+          </div>
           <UniversitySearch
             directoryError={directoryError}
             directoryStatus={directoryStatus}
@@ -155,17 +154,17 @@ export default function App() {
             selectedStateFips={selectedStateFips}
             selectedUnitid={selectedInstitution?.unitid ?? null}
           />
+        </section>
 
-          <FinancialProfile
-            financeError={financeError}
-            financeRecord={financeRecord}
-            financeStatus={financeStatus}
-            institutionName={selectedInstitution?.name ?? null}
-            onRetry={retryFinance}
-            reportingYear={reportingYear}
-            stateFips={selectedStateFips}
-          />
-        </div>
+        <FinancialProfile
+          financeError={financeError}
+          financeRecord={financeRecord}
+          financeStatus={financeStatus}
+          institutionName={selectedInstitution?.name ?? null}
+          onRetry={retryFinance}
+          reportingYear={reportingYear}
+          stateFips={selectedStateFips}
+        />
 
         <footer className="mt-10 flex flex-col gap-2 border-t border-[#e2e8e1] pt-5 text-xs leading-5 text-[#7b8980] sm:flex-row sm:items-center sm:justify-between">
           <p>
