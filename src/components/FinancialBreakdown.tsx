@@ -60,17 +60,17 @@ const percentageFormatter = new Intl.NumberFormat('en-US', {
 
 export function FinancialBreakdown({ record }: FinancialBreakdownProps) {
   return (
-    <section className="mt-8 border-t border-[#edf0eb] pt-7">
+    <section className="mt-8 border-t border-outline-subtle pt-7">
       <RevenueCoverageDonut record={record} />
 
       <div className="mb-5">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#63806c]">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-accent">
           Where the money comes from and goes
         </p>
-        <h3 className="text-lg font-semibold tracking-tight text-[#23372a]">
+        <h3 className="text-lg font-semibold tracking-tight text-text-primary">
           Selected reported categories
         </h3>
-        <p className="mt-2 text-sm leading-6 text-[#758279]">
+        <p className="mt-2 text-sm leading-6 text-text-secondary">
           These categories are not a complete breakdown and should not be added
           together as totals. A missing value means it was not reported.
         </p>
@@ -91,7 +91,7 @@ export function FinancialBreakdown({ record }: FinancialBreakdownProps) {
         />
       </div>
 
-      <p className="mt-4 rounded-xl bg-[#f7f9f6] px-4 py-3 text-xs leading-5 text-[#718078]">
+      <p className="mt-4 rounded-xl bg-surface-inset px-4 py-3 text-xs leading-5 text-text-muted">
         Investment returns can include valuation changes, so they may not
         represent recurring revenue. Values are shown as reported by IPEDS.
       </p>
@@ -109,11 +109,11 @@ function RevenueCoverageDonut({ record }: FinancialBreakdownProps) {
     record.total_expenses_deductions < 0
   ) {
     return (
-      <section className="mb-8 rounded-2xl border border-[#e8ece7] bg-[#fbfcfa] p-5">
-        <h3 className="text-base font-semibold text-[#344a3a]">
+      <section className="mb-8 rounded-2xl border border-outline bg-surface-inset p-5">
+        <h3 className="text-base font-semibold text-text-primary">
           Revenue coverage
         </h3>
-        <p className="mt-2 text-sm leading-6 text-[#718078]">
+        <p className="mt-2 text-sm leading-6 text-text-muted">
           A coverage chart is unavailable because reported revenue or expenses
           are missing, or the values do not support a meaningful ratio.
         </p>
@@ -137,13 +137,13 @@ function RevenueCoverageDonut({ record }: FinancialBreakdownProps) {
   return (
     <section
       aria-label={`Revenue coverage for ${record.year}`}
-      className="mb-8 rounded-2xl border border-[#dfe8df] bg-[#f7faf6] p-5 sm:p-6"
+      className="mb-8 rounded-2xl border border-accent-outline bg-accent-surface p-5 sm:p-6"
     >
       <div className="mb-4">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#63806c]">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.14em] text-accent">
           Overall financial snapshot
         </p>
-        <h3 className="text-base font-semibold text-[#344a3a]">
+        <h3 className="text-base font-semibold text-text-primary">
           Revenue coverage
         </h3>
       </div>
@@ -185,29 +185,32 @@ function RevenueCoverageDonut({ record }: FinancialBreakdownProps) {
                   stroke="none"
                 >
                   <Cell fill="#5a8963" />
-                  <Cell fill="#dce8dc" />
+                  <Cell fill="#344638" />
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    border: '1px solid #e1e6df',
+                    backgroundColor: '#191919',
+                    border: '1px solid #343430',
                     borderRadius: '12px',
+                    color: '#f2f0eb',
                     fontSize: '12px',
                   }}
                   formatter={(value) =>
                     currencyFormatter.format(Number(value ?? 0))
                   }
+                  wrapperStyle={{ zIndex: 20, pointerEvents: 'none' }}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
+            className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center"
           >
-            <span className="text-2xl font-semibold tracking-tight text-[#233d2d]">
+            <span className="text-2xl font-semibold tracking-tight text-text-primary">
               {percentageFormatter.format(expenseShare * 100)}%
             </span>
-            <span className="mt-1 text-center text-[11px] leading-4 text-[#718078]">
+            <span className="mt-1 text-center text-[11px] leading-4 text-text-secondary">
               expenses
               <br />
               of revenue
@@ -216,21 +219,21 @@ function RevenueCoverageDonut({ record }: FinancialBreakdownProps) {
         </div>
         <div>
           <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-1">
-            <div className="rounded-xl border border-[#e8ece7] bg-white px-4 py-3">
-              <p className="flex items-center gap-2 text-xs font-medium text-[#718078]">
+            <div className="rounded-xl border border-outline bg-surface-raised px-4 py-3">
+              <p className="flex items-center gap-2 text-xs font-medium text-text-muted">
                 <span aria-hidden="true" className="size-2.5 rounded-full bg-[#5a8963]" />
                 Total expenses
               </p>
-              <p className="mt-1 text-lg font-semibold text-[#344a3a]">
+              <p className="mt-1 text-lg font-semibold text-text-primary">
                 {currencyFormatter.format(record.total_expenses_deductions)}
               </p>
             </div>
-            <div className="rounded-xl border border-[#e8ece7] bg-white px-4 py-3">
-              <p className="flex items-center gap-2 text-xs font-medium text-[#718078]">
-                <span aria-hidden="true" className="size-2.5 rounded-full bg-[#dce8dc]" />
+            <div className="rounded-xl border border-outline bg-surface-raised px-4 py-3">
+              <p className="flex items-center gap-2 text-xs font-medium text-text-muted">
+                <span aria-hidden="true" className="size-2.5 rounded-full bg-[#344638]" />
                 Total revenue
               </p>
-              <p className="mt-1 text-lg font-semibold text-[#344a3a]">
+              <p className="mt-1 text-lg font-semibold text-text-primary">
                 {currencyFormatter.format(revenue)}
               </p>
             </div>
@@ -238,8 +241,8 @@ function RevenueCoverageDonut({ record }: FinancialBreakdownProps) {
           <p
             className={`mt-3 rounded-xl px-4 py-3 text-sm leading-5 ${
               exceededRevenue
-                ? 'border border-[#f0d7d1] bg-[#fff7f5] text-[#8e3f31]'
-                : 'bg-white text-[#52645a]'
+                ? 'border border-error-outline bg-error-surface text-error-text'
+                : 'bg-surface-raised text-text-secondary'
             }`}
           >
             {exceededRevenue
@@ -248,7 +251,7 @@ function RevenueCoverageDonut({ record }: FinancialBreakdownProps) {
           </p>
         </div>
       </div>
-      <p className="mt-4 text-xs leading-5 text-[#718078]">
+      <p className="mt-4 text-xs leading-5 text-text-muted">
         This is a simple ratio of reported totals, not a measure of institutional
         health or reported net income. IPEDS accounting adjustments can make
         revenue less expenses differ from reported net income.
@@ -278,9 +281,9 @@ function CategoryChart({ title, color, categories, record }: CategoryChartProps)
   return (
     <section
       aria-label={`${title} categories for ${record.year}`}
-      className="rounded-2xl border border-[#e8ece7] bg-[#fbfcfa] p-4"
+      className="rounded-2xl border border-outline bg-surface-inset p-4"
     >
-      <h4 className="mb-1 text-sm font-semibold text-[#344a3a]">{title}</h4>
+      <h4 className="mb-1 text-sm font-semibold text-text-primary">{title}</h4>
       {data.length > 0 ? (
         <div
           aria-label={`${title} by category. Focus the chart and use arrow keys to explore values.`}
@@ -294,11 +297,11 @@ function CategoryChart({ title, color, categories, record }: CategoryChartProps)
               layout="vertical"
               margin={{ top: 4, right: 48, bottom: 4, left: 0 }}
             >
-              <CartesianGrid horizontal={false} stroke="#e8ece7" />
+              <CartesianGrid horizontal={false} stroke="#343430" />
               <XAxis
                 axisLine={false}
                 domain={['auto', 'auto']}
-                tick={{ fill: '#829087', fontSize: 10 }}
+                tick={{ fill: '#9c9b94', fontSize: 10 }}
                 tickFormatter={(value: number) =>
                   compactCurrencyFormatter.format(value)
                 }
@@ -308,26 +311,30 @@ function CategoryChart({ title, color, categories, record }: CategoryChartProps)
               <YAxis
                 axisLine={false}
                 dataKey="name"
-                tick={{ fill: '#596b60', fontSize: 11 }}
+                tick={{ fill: '#c7c5be', fontSize: 11 }}
                 tickLine={false}
                 type="category"
                 width={144}
               />
               <Tooltip
                 contentStyle={{
-                  border: '1px solid #e1e6df',
+                  backgroundColor: '#191919',
+                  border: '1px solid #343430',
                   borderRadius: '12px',
+                  color: '#f2f0eb',
                   fontSize: '12px',
                 }}
                 formatter={(value) =>
                   currencyFormatter.format(Number(value ?? 0))
                 }
-                labelStyle={{ color: '#344a3a', fontWeight: 600 }}
+                labelStyle={{ color: '#f2f0eb', fontWeight: 600 }}
+                cursor={{ fill: '#243c3b', fillOpacity: 0.75 }}
+                wrapperStyle={{ zIndex: 20 }}
               />
               <Bar dataKey="amount" fill={color} maxBarSize={20} radius={[0, 5, 5, 0]}>
                 <LabelList
                   dataKey="amount"
-                  fill="#52645a"
+                  fill="#c7c5be"
                   formatter={(value) =>
                     compactCurrencyFormatter.format(Number(value))
                   }
@@ -339,12 +346,12 @@ function CategoryChart({ title, color, categories, record }: CategoryChartProps)
           </ResponsiveContainer>
         </div>
       ) : (
-        <p className="rounded-xl bg-white px-3 py-4 text-sm text-[#718078]">
+        <p className="rounded-xl bg-surface-raised px-3 py-4 text-sm text-text-muted">
           No category values were reported for this year.
         </p>
       )}
       {unavailableCategories.length > 0 && (
-        <p className="mt-3 text-xs leading-5 text-[#819087]">
+        <p className="mt-3 text-xs leading-5 text-text-muted">
           Not reported: {unavailableCategories.map((category) => category.label).join(', ')}.
         </p>
       )}
