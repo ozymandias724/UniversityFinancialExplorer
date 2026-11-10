@@ -13,6 +13,20 @@ export interface Institution {
   control: number | null
 }
 
+export interface InstitutionSelection {
+  institution: Institution | null
+  reportingYear: number
+}
+
+export interface FinanceAvailability {
+  unitid: number | null
+  reportingYear: number
+  status: RequestStatus
+  hasRecord: boolean | null
+  error: string | null
+  record: FinanceRecord | null
+}
+
 export interface FinanceRecord {
   unitid: number
   year: number

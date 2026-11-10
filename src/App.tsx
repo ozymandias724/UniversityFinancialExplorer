@@ -2,11 +2,15 @@ import { lazy, Suspense, useMemo, useState } from 'react'
 import { UniversitySearch } from './components/UniversitySearch'
 import { useUniversityData } from './hooks/useUniversityData'
 import {
-  REPORTING_YEARS,
+  DEFAULT_REPORTING_YEAR,
   SEARCH_RESULT_LIMIT,
   US_STATES,
 } from './services/educationData/metadata'
-import type { FinanceRecord } from './types/education'
+import type {
+  FinanceRecord,
+  Institution,
+  InstitutionSelection,
+} from './types/education'
 
 // Load the chart code only when a financial record is ready to display.
 const FinancialBreakdown = lazy(() =>
@@ -35,11 +39,28 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 })
 
+interface DisplayedComparisonProfile {
+  institution: Institution
+  reportingYear: number
+  financeRecord: FinanceRecord
+}
+
 export default function App() {
   // The search text belongs to this page; the hook manages API data and selections.
   const [query, setQuery] = useState('')
+  const [comparisonSlots, setComparisonSlots] = useState<
+    [InstitutionSelection, InstitutionSelection]
+  >([
+    { institution: null, reportingYear: DEFAULT_REPORTING_YEAR },
+    { institution: null, reportingYear: DEFAULT_REPORTING_YEAR },
+  ])
+  const [activeSlot, setActiveSlot] = useState<0 | 1>(0)
+  const [displayedComparison, setDisplayedComparison] = useState<
+    [DisplayedComparisonProfile, DisplayedComparisonProfile] | null
+  >(null)
   const {
     reportingYear,
+    financeReportingYear,
     selectedStateFips,
     institutions,
     directoryStatus,
@@ -48,12 +69,14 @@ export default function App() {
     financeRecord,
     financeStatus,
     financeError,
+    financeAvailability,
     selectState,
     selectReportingYear,
     selectInstitution,
     retryDirectory,
     retryFinance,
-  } = useUniversityData()
+    retryAvailability,
+  } = useUniversityData(comparisonSlots)
 
   // Filter the already-loaded state directory locally to avoid extra API requests.
   const matchingInstitutions = useMemo(() => {
@@ -80,10 +103,109 @@ export default function App() {
     selectState(fips)
   }
 
+  const handleSlotChange = (slot: 0 | 1) => {
+    setActiveSlot(slot)
+    selectReportingYear(comparisonSlots[slot].reportingYear)
+    handleStateChange(null)
+  }
+
+  const handleSlotYearChange = (slot: 0 | 1, year: number): boolean => {
+    const otherSelection = comparisonSlots[slot === 0 ? 1 : 0]
+    const currentInstitution = comparisonSlots[slot].institution
+    if (
+      currentInstitution &&
+      otherSelection.institution?.unitid === currentInstitution.unitid &&
+      otherSelection.reportingYear === year
+    ) {
+      return false
+    }
+
+    setComparisonSlots((current) => {
+      const next: [InstitutionSelection, InstitutionSelection] = [...current]
+      next[slot] = { ...next[slot], reportingYear: year }
+      return next
+    })
+    setActiveSlot(slot)
+    selectReportingYear(year)
+    handleStateChange(null)
+    return true
+  }
+
+  const handleInstitutionSelect = (institution: Institution) => {
+    const currentSelection = comparisonSlots[activeSlot]
+    const otherSelection = comparisonSlots[activeSlot === 0 ? 1 : 0]
+    if (
+      otherSelection.institution?.unitid === institution.unitid &&
+      otherSelection.reportingYear === currentSelection.reportingYear
+    ) {
+      return
+    }
+
+    setComparisonSlots((current) => {
+      const next: [InstitutionSelection, InstitutionSelection] = [...current]
+      next[activeSlot] = { ...next[activeSlot], institution }
+      return next
+    })
+  }
+
+  const handleClearSlot = (slot: 0 | 1) => {
+    setComparisonSlots((current) => {
+      const next: [InstitutionSelection, InstitutionSelection] = [...current]
+      next[slot] = { ...next[slot], institution: null }
+      return next
+    })
+  }
+
+  const selectedCount = comparisonSlots.filter(
+    (selection) => selection.institution !== null,
+  ).length
+  const allSelectionsAvailable = comparisonSlots.every((selection, index) => {
+    if (!selection.institution) {
+      return true
+    }
+
+    const availability = financeAvailability[index]
+    return (
+      availability.unitid === selection.institution.unitid &&
+      availability.reportingYear === selection.reportingYear &&
+      availability.status === 'ready' &&
+      availability.hasRecord
+    )
+  })
+  const handleSubmitSelection = () => {
+    if (selectedCount === 1 && allSelectionsAvailable) {
+      const selection = comparisonSlots.find(
+        (candidate) => candidate.institution !== null,
+      )
+      if (selection?.institution) {
+        setDisplayedComparison(null)
+        selectInstitution(selection.institution, selection.reportingYear)
+      }
+      return
+    }
+
+    if (selectedCount === 2 && allSelectionsAvailable) {
+      const profiles = comparisonSlots.map((selection, index) => {
+        const record = financeAvailability[index].record
+        if (!selection.institution || !record) {
+          return null
+        }
+        return {
+          institution: selection.institution,
+          reportingYear: selection.reportingYear,
+          financeRecord: record,
+        }
+      })
+      if (profiles[0] && profiles[1]) {
+        setDisplayedComparison([profiles[0], profiles[1]])
+      }
+    }
+  }
+
   // Page flow: choose a year and school, view its financial profile, then see the data source.
   return (
     <div className="min-h-screen bg-page text-text-primary">
-      {/* Branding and reporting-year selection */}
+      {/* Branding */}
       <header className="border-b border-outline-subtle bg-surface">
         <div className="mx-auto flex max-w-7xl flex-col items-start gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <a className="flex items-center gap-3 no-underline" href="/" aria-label="University Financial Explorer home">
@@ -112,21 +234,6 @@ export default function App() {
               </span>
             </span>
           </a>
-          <label className="flex items-center gap-2 text-xs font-medium text-text-secondary">
-            Reporting year
-            <select
-              aria-label="Reporting year"
-              className="rounded-lg border border-outline bg-surface-inset px-3 py-2 text-sm font-semibold text-accent outline-none focus:border-[#527c5d] focus:ring-4 focus:ring-[#527c5d]/20"
-              onChange={(event) => selectReportingYear(Number(event.target.value))}
-              value={reportingYear}
-            >
-              {REPORTING_YEARS.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
       </header>
 
@@ -153,26 +260,68 @@ export default function App() {
             loadedInstitutionCount={institutions.length}
             matchCount={matchingInstitutions.length}
             onDirectoryRetry={retryDirectory}
-            onInstitutionSelect={selectInstitution}
+            onActiveSlotChange={handleSlotChange}
+            onClearSlot={handleClearSlot}
+            onInstitutionSelect={handleInstitutionSelect}
             onQueryChange={setQuery}
+            onSubmitSelection={handleSubmitSelection}
             onStateChange={handleStateChange}
             query={query}
             reportingYear={reportingYear}
             selectedStateFips={selectedStateFips}
-            selectedUnitid={selectedInstitution?.unitid ?? null}
+            selectedInstitutions={comparisonSlots}
+            activeSlot={activeSlot}
+            selectedUnitid={
+              comparisonSlots[activeSlot].institution?.unitid ?? null
+            }
+            displayedInstitutionName={selectedInstitution?.name ?? null}
+            displayedReportingYear={financeReportingYear}
+            selectedCount={selectedCount}
+            onSlotYearChange={handleSlotYearChange}
+            financeAvailability={financeAvailability}
+            onAvailabilityRetry={retryAvailability}
+            allSelectionsAvailable={allSelectionsAvailable}
           />
         </section>
 
-        {/* The profile handles the selected school's loading, error, and data states. */}
-        <FinancialProfile
-          financeError={financeError}
-          financeRecord={financeRecord}
-          financeStatus={financeStatus}
-          institutionName={selectedInstitution?.name ?? null}
-          onRetry={retryFinance}
-          reportingYear={reportingYear}
-          stateFips={selectedStateFips}
-        />
+        {/* Single profiles and submitted comparisons are separate from draft tray selections. */}
+        {displayedComparison ? (
+          <section aria-label="Institution comparison">
+            <div className="mb-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">
+                Comparing institutions
+              </p>
+              <p className="mt-2 text-sm text-text-muted">
+                Financial amounts are reported in nominal dollars and are not
+                adjusted for inflation.
+              </p>
+            </div>
+            <div className="grid min-w-0 gap-5 lg:grid-cols-2">
+              {displayedComparison.map((profile) => (
+                <FinancialProfile
+                  compact
+                  financeError={null}
+                  financeRecord={profile.financeRecord}
+                  financeStatus="ready"
+                  institutionName={profile.institution.name}
+                  key={`${profile.institution.unitid}-${profile.reportingYear}`}
+                  reportingYear={profile.reportingYear}
+                  stateFips={null}
+                />
+              ))}
+            </div>
+          </section>
+        ) : (
+          <FinancialProfile
+            financeError={financeError}
+            financeRecord={financeRecord}
+            financeStatus={financeStatus}
+            institutionName={selectedInstitution?.name ?? null}
+            onRetry={retryFinance}
+            reportingYear={financeReportingYear}
+            stateFips={selectedStateFips}
+          />
+        )}
 
         {/* Credit the data source and clarify how missing values are presented. */}
         <footer className="mt-10 flex flex-col gap-2 border-t border-outline-subtle pt-5 text-xs leading-5 text-text-muted sm:flex-row sm:items-center sm:justify-between">
@@ -196,16 +345,18 @@ export default function App() {
 }
 
 interface FinancialProfileProps {
+  compact?: boolean
   institutionName: string | null
   reportingYear: number
   stateFips: number | null
   financeStatus: 'idle' | 'loading' | 'ready' | 'error'
   financeError: string | null
   financeRecord: FinanceRecord | null
-  onRetry: () => void
+  onRetry?: () => void
 }
 
 function FinancialProfile({
+  compact = false,
   institutionName,
   reportingYear,
   stateFips,
@@ -258,8 +409,8 @@ function FinancialProfile({
             </h3>
             <p className="mt-2 max-w-sm text-sm leading-6 text-text-muted">
               {stateName
-                ? `Search ${stateName} institutions, then choose one to see reported financial figures.`
-                : 'Choose a state, search for a school, and select it to see reported financial figures.'}
+                ? `Search ${stateName} institutions, add one to a selection, then submit to see its reported financial figures.`
+                : 'Choose a state, search for a school, add it to a selection, then submit to see reported financial figures.'}
             </p>
           </div>
         )}
@@ -309,7 +460,11 @@ function FinancialProfile({
               </span>
             </div>
             {/* Show unavailable values as text rather than implying they are zero. */}
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div
+              className={`grid gap-3 ${
+                compact ? '' : 'sm:grid-cols-2'
+              }`}
+            >
               {financialMetrics.map((metric, index) => {
                 const value = financeRecord[metric.key]
                 return (
@@ -349,11 +504,12 @@ function FinancialProfile({
                 </p>
               }
             >
-              <FinancialBreakdown record={financeRecord} />
+              <FinancialBreakdown compact={compact} record={financeRecord} />
             </Suspense>
             <p className="mt-4 text-xs leading-5 text-text-muted">
               Values are reported by IPEDS. Categories may reflect different
               accounting treatments; the selected categories are not summed.
+              {compact && ' Amounts are not adjusted for inflation.'}
             </p>
           </>
         )}

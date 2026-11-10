@@ -20,6 +20,7 @@ interface FinanceCategory {
 
 interface FinancialBreakdownProps {
   record: FinanceRecord
+  compact?: boolean
 }
 
 const revenueCategories = [
@@ -58,10 +59,13 @@ const percentageFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 1,
 })
 
-export function FinancialBreakdown({ record }: FinancialBreakdownProps) {
+export function FinancialBreakdown({
+  record,
+  compact = false,
+}: FinancialBreakdownProps) {
   return (
     <section className="mt-8 border-t border-outline-subtle pt-7">
-      <RevenueCoverageDonut record={record} />
+      <RevenueCoverageDonut compact={compact} record={record} />
 
       <div className="mb-5">
         <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-accent">
@@ -76,7 +80,7 @@ export function FinancialBreakdown({ record }: FinancialBreakdownProps) {
         </p>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className={`grid gap-4 ${compact ? '' : 'xl:grid-cols-2'}`}>
         <CategoryChart
           categories={revenueCategories}
           color="#5a8963"
@@ -99,7 +103,10 @@ export function FinancialBreakdown({ record }: FinancialBreakdownProps) {
   )
 }
 
-function RevenueCoverageDonut({ record }: FinancialBreakdownProps) {
+function RevenueCoverageDonut({
+  record,
+  compact = false,
+}: FinancialBreakdownProps) {
   const revenue = record.total_revenues_additions
 
   if (
@@ -147,7 +154,11 @@ function RevenueCoverageDonut({ record }: FinancialBreakdownProps) {
           Revenue coverage
         </h3>
       </div>
-      <div className="grid items-center gap-4 md:grid-cols-[minmax(190px,0.8fr)_minmax(0,1.2fr)]">
+      <div
+        className={`grid items-center gap-4 ${
+          compact ? '' : 'md:grid-cols-[minmax(190px,0.8fr)_minmax(0,1.2fr)]'
+        }`}
+      >
         <div className="relative mx-auto h-[220px] w-full max-w-[260px]">
           <div
             aria-label={`Expenses are ${percentageFormatter.format(expenseShare * 100)} percent of reported revenue.${exceededRevenue ? ` The red outer ring shows expenses exceeding revenue by ${percentageFormatter.format((expenses - revenue) / revenue * 100)} percent of revenue.` : ''}`}

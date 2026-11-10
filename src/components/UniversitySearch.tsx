@@ -1,6 +1,11 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import type { Institution, RequestStatus } from '../types/education'
-import { US_STATES } from '../services/educationData/metadata'
+import type {
+  FinanceAvailability,
+  Institution,
+  InstitutionSelection,
+  RequestStatus,
+} from '../types/education'
+import { REPORTING_YEARS, US_STATES } from '../services/educationData/metadata'
 
 interface UniversitySearchProps {
   reportingYear: number
@@ -16,6 +21,18 @@ interface UniversitySearchProps {
   onDirectoryRetry: () => void
   selectedUnitid: number | null
   onInstitutionSelect: (institution: Institution) => void
+  selectedInstitutions: [InstitutionSelection, InstitutionSelection]
+  activeSlot: 0 | 1
+  onActiveSlotChange: (slot: 0 | 1) => void
+  onSlotYearChange: (slot: 0 | 1, year: number) => boolean
+  onClearSlot: (slot: 0 | 1) => void
+  onSubmitSelection: () => void
+  displayedInstitutionName: string | null
+  displayedReportingYear: number
+  selectedCount: number
+  financeAvailability: [FinanceAvailability, FinanceAvailability]
+  onAvailabilityRetry: (slot: 0 | 1) => void
+  allSelectionsAvailable: boolean
 }
 
 export function UniversitySearch({
@@ -32,8 +49,21 @@ export function UniversitySearch({
   onDirectoryRetry,
   selectedUnitid,
   onInstitutionSelect,
+  selectedInstitutions,
+  activeSlot,
+  onActiveSlotChange,
+  onSlotYearChange,
+  onClearSlot,
+  onSubmitSelection,
+  displayedInstitutionName,
+  displayedReportingYear,
+  selectedCount,
+  financeAvailability,
+  onAvailabilityRetry,
+  allSelectionsAvailable,
 }: UniversitySearchProps) {
   const [resultsOpen, setResultsOpen] = useState(false)
+  const [duplicateSelection, setDuplicateSelection] = useState(false)
   const [resultsPlacement, setResultsPlacement] = useState<'above' | 'below'>(
     'below',
   )
@@ -178,6 +208,7 @@ export function UniversitySearch({
           id="institution-search"
           onChange={(event) => {
             onQueryChange(event.target.value)
+            setDuplicateSelection(false)
             setResultsOpen(true)
           }}
           onFocus={() => {
@@ -226,7 +257,18 @@ export function UniversitySearch({
                         : 'border-transparent bg-surface hover:border-outline hover:bg-surface-raised'
                     }`}
                     onClick={() => {
+                      const otherSlot = selectedInstitutions[activeSlot === 0 ? 1 : 0]
+                      const currentSelection = selectedInstitutions[activeSlot]
+                      if (
+                        otherSlot.institution?.unitid === institution.unitid &&
+                        otherSlot.reportingYear === currentSelection.reportingYear
+                      ) {
+                        setDuplicateSelection(true)
+                        return
+                      }
+                      setDuplicateSelection(false)
                       onInstitutionSelect(institution)
+                      onQueryChange('')
                       setResultsOpen(false)
                     }}
                     type="button"
@@ -302,9 +344,176 @@ export function UniversitySearch({
         )}
       </div>
 
-      <p className="mt-5 border-t border-outline-subtle pt-4 text-xs text-text-muted">
-        IPEDS reporting year: {reportingYear}
-      </p>
+      <div className="mt-6 border-t border-outline-subtle pt-5">
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <h3 className="text-sm font-semibold text-text-primary">
+            Your selections
+          </h3>
+          <p className="text-xs text-text-muted">Choose up to 2 institutions</p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {([0, 1] as const).map((slot) => {
+            const selection = selectedInstitutions[slot]
+            const institution = selection.institution
+            const availability = financeAvailability[slot]
+            const availabilityMatchesSelection =
+              institution !== null &&
+              availability.unitid === institution.unitid &&
+              availability.reportingYear === selection.reportingYear
+            const availabilityStatus = availabilityMatchesSelection
+              ? availability.status
+              : institution
+                ? 'loading'
+                : 'idle'
+            const isActive = activeSlot === slot
+            return (
+              <div
+                className={`min-w-0 rounded-xl border p-3 ${
+                  isActive
+                    ? 'border-accent-outline bg-accent-surface'
+                    : 'border-outline-subtle bg-surface-inset'
+                }`}
+                key={slot}
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-accent">
+                  Institution {slot + 1}
+                </p>
+                <label className="mt-2 block text-xs font-medium text-text-secondary">
+                  Reporting year
+                  <select
+                    aria-label={`Institution ${slot + 1} reporting year`}
+                    className="mt-1 w-full rounded-lg border border-outline bg-surface-inset px-2 py-2 text-sm text-text-primary outline-none focus:border-[#527c5d] focus:ring-2 focus:ring-[#527c5d]/20"
+                    onChange={(event) => {
+                      const accepted = onSlotYearChange(
+                        slot,
+                        Number(event.target.value),
+                      )
+                      setDuplicateSelection(!accepted)
+                    }}
+                    value={selection.reportingYear}
+                  >
+                    {REPORTING_YEARS.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  aria-pressed={isActive}
+                  className="mt-2 w-full text-left focus:outline-none focus:ring-2 focus:ring-[#6c9274]"
+                  onClick={() => {
+                    setDuplicateSelection(false)
+                    onActiveSlotChange(slot)
+                  }}
+                  type="button"
+                >
+                  <span className="mt-1 block truncate text-sm font-medium text-text-primary">
+                    {institution?.name ??
+                      (slot === 0 ? 'Select an institution' : 'Add another')}
+                  </span>
+                  {institution && (
+                    <span className="mt-1 block truncate text-xs text-text-muted">
+                      {institution.city ?? 'Location unavailable'}
+                      {institution.stateAbbreviation
+                        ? `, ${institution.stateAbbreviation}`
+                        : ''}
+                    </span>
+                  )}
+                </button>
+                {institution && (
+                  <button
+                    aria-label={`Remove ${institution.name}`}
+                    className="mt-2 text-xs font-medium text-text-muted underline underline-offset-2 hover:text-text-primary"
+                    onClick={() => {
+                      setDuplicateSelection(false)
+                      onClearSlot(slot)
+                    }}
+                    type="button"
+                  >
+                    Remove
+                  </button>
+                )}
+                {institution && (
+                  <div
+                    aria-live="polite"
+                    className="mt-3 border-t border-outline-subtle pt-2 text-xs leading-5 text-text-muted"
+                  >
+                    {availabilityStatus === 'loading' && (
+                      <p>Checking data for {selection.reportingYear}…</p>
+                    )}
+                    {availabilityStatus === 'ready' &&
+                      availability.hasRecord && (
+                        <p className="text-accent">
+                          Data available for {selection.reportingYear}
+                        </p>
+                      )}
+                    {availabilityStatus === 'ready' &&
+                      !availability.hasRecord && (
+                        <p className="text-error-text">
+                          No finance record is available for {selection.reportingYear}.
+                          Choose another year or institution.
+                        </p>
+                      )}
+                    {availabilityStatus === 'error' && (
+                      <>
+                        <p className="text-error-text">
+                          Could not check this institution's data: {availability.error}
+                        </p>
+                        <button
+                          className="mt-1 font-semibold underline underline-offset-2"
+                          onClick={() => onAvailabilityRetry(slot)}
+                          type="button"
+                        >
+                          Retry check
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {duplicateSelection && (
+          <p
+            className="mt-3 rounded-lg border border-outline-subtle bg-surface-inset px-3 py-2 text-xs text-text-secondary"
+            role="status"
+          >
+            This institution and reporting year are already in the other
+            selection.
+          </p>
+        )}
+
+        <p className="mt-3 text-xs leading-5 text-text-muted">
+          Select a school above to add it to the active institution slot. Your
+          current profile stays unchanged until you submit.
+        </p>
+
+        <button
+          className="mt-4 w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-[#111111] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={selectedCount === 0 || !allSelectionsAvailable}
+          onClick={onSubmitSelection}
+          type="button"
+        >
+          {selectedCount === 2 ? 'Compare profiles' : 'Load profile'}
+        </button>
+
+        {selectedCount === 2 && (
+          <p className="mt-2 text-center text-xs text-text-muted" role="status">
+            {allSelectionsAvailable
+              ? 'Both selections have available data. Submit to compare them.'
+              : 'Both selections need available data before comparison.'}
+          </p>
+        )}
+        {selectedCount === 1 && displayedInstitutionName && (
+          <p className="mt-2 text-center text-xs text-text-muted" role="status">
+            Displaying {displayedInstitutionName} ({displayedReportingYear});
+            submit to update the profile.
+          </p>
+        )}
+      </div>
     </section>
   )
 }

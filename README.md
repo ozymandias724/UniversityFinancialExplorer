@@ -6,12 +6,18 @@ The app has no custom backend or database.
 
 ## What the app does
 
-- Select a reporting year (2014–2023; defaults to 2023) and a state.
+- Choose a reporting year and state for each of up to two institution
+  selections (years default to 2023).
+- The same institution can be selected in both slots for different years; an
+  identical institution-and-year pair cannot be selected twice.
+- Each selected institution-year is checked before submission. Missing data
+  blocks submission; request errors are shown separately and can be retried.
 - Search that state's active, degree-granting, four-year institutions by name
   or city. Search happens locally because the directory API does not support a
   name filter.
-- Choose an institution to see reported financial figures, selected revenue
-  and expense categories, and a revenue-coverage donut.
+- Submit one selected institution to see reported financial figures, selected
+  revenue and expense categories, and a revenue-coverage donut. Submit two
+  selections to compare their profiles side by side on desktop.
 - Browse up to eight matching institutions in a scrollable menu. The menu is
   capped at 18rem high and opens above the search field when the viewport has
   insufficient room below it.
@@ -21,7 +27,8 @@ The app has no custom backend or database.
 The donut compares expenses with revenue; it is not a health score or reported
 net income. If reported expenses exceed revenue, the inner ring fills and a red
 outer arc shows the overrun. Missing API values remain unavailable rather than
-being treated as zero.
+being treated as zero. Financial amounts are reported in nominal dollars and
+are not adjusted for inflation.
 
 ## Data requests and safeguards
 
@@ -65,11 +72,11 @@ The app separates page display, request state, and API communication:
 1. [`App.tsx`](./src/App.tsx) assembles the page and keeps the text typed into
    the institution search. It filters the already-loaded state directory
    locally, then passes selections and data to the UI components.
-2. [`useUniversityData`](./src/hooks/useUniversityData.ts) owns the selected
-   state, institution, and reporting year. When those selections change, it
-   starts the relevant request and tracks whether it is loading, ready, or has
-   failed. It cancels outdated requests so stale results cannot replace newer
-   selections.
+2. [`useUniversityData`](./src/hooks/useUniversityData.ts) owns the active
+   search state and year, the institution and year currently shown in the
+   profile, and the per-slot finance availability checks. It tracks request
+   status and cancels outdated requests so stale results cannot replace newer
+   ones.
 3. The service functions build endpoint-specific requests:
    [`getInstitutions`](./src/services/educationData/universities.ts) loads a
    bounded state directory, and
