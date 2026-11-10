@@ -9,6 +9,7 @@ import {
 // Null is cached as "no record"; it is distinct from a failed request and from numeric zeroes.
 const financeCache = new Map<string, FinanceRecord | null>()
 
+// Request and validate the single record identified by institution ID (UNITID) and reporting year.
 export async function getFinanceRecord(
   unitid: number,
   reportingYear: number,
@@ -29,6 +30,7 @@ export async function getFinanceRecord(
 
   const financePath = `/api/v1/college-university/ipeds/finance/${reportingYear}/`
   const url = new URL(financePath, API_ORIGIN)
+  // UNITID keeps the finance query limited to one institution.
   url.searchParams.set('unitid', String(unitid))
 
   const { data } = await fetchApiJson(url, {
@@ -93,6 +95,7 @@ function parseFinanceRecord(data: unknown): FinanceRecord {
     throw new Error('The API returned an invalid finance record.')
   }
 
+  // Select only the fields used by the app and check each reported value before returning it.
   return {
     unitid: data.unitid,
     year: data.year,

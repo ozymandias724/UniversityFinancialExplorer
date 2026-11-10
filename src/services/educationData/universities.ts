@@ -18,6 +18,7 @@ const REQUIRED_DIRECTORY_FILTERS = [
   ['institution_level', '4'],
 ] as const
 
+// Load one state's directory, validate every page, and cache only a complete result.
 export async function getInstitutions(
   stateFips: number,
   reportingYear: number,
@@ -39,6 +40,7 @@ export async function getInstitutions(
 
   const directoryPath = `/api/v1/college-university/ipeds/directory/${reportingYear}/`
   const initialUrl = new URL(directoryPath, API_ORIGIN)
+  // The state is required, and the additional filters restrict results to active degree-granting institutions.
   initialUrl.searchParams.set('fips', String(stateFips))
   // Name search is not supported server-side, so these scope filters keep local search bounded.
   initialUrl.searchParams.set('degree_granting', '1')
@@ -95,6 +97,7 @@ export async function getInstitutions(
         throw new Error('The directory count changed while pages were being retrieved.')
       }
 
+      // Convert raw API objects to the app's smaller Institution shape before storing them.
       institutions.push(...envelope.results.map(parseInstitution))
       if (institutions.length > MAX_DIRECTORY_RECORDS) {
         throw new Error(

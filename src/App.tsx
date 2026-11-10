@@ -8,12 +8,14 @@ import {
 } from './services/educationData/metadata'
 import type { FinanceRecord } from './types/education'
 
+// Load the chart code only when a financial record is ready to display.
 const FinancialBreakdown = lazy(() =>
   import('./components/FinancialBreakdown').then((module) => ({
     default: module.FinancialBreakdown,
   })),
 )
 
+// These are the headline figures shown before the more detailed charts.
 const financialMetrics = [
   { key: 'total_revenues_additions', label: 'Total revenues and additions' },
   { key: 'total_expenses_deductions', label: 'Total expenses and deductions' },
@@ -34,6 +36,7 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 })
 
 export default function App() {
+  // The search text belongs to this page; the hook manages API data and selections.
   const [query, setQuery] = useState('')
   const {
     reportingYear,
@@ -52,6 +55,7 @@ export default function App() {
     retryFinance,
   } = useUniversityData()
 
+  // Filter the already-loaded state directory locally to avoid extra API requests.
   const matchingInstitutions = useMemo(() => {
     // The API has no name filter, so search only the already bounded state directory.
     const searchTerms = normalize(query.trim())
@@ -76,8 +80,10 @@ export default function App() {
     selectState(fips)
   }
 
+  // Page flow: choose a year and school, view its financial profile, then see the data source.
   return (
     <div className="min-h-screen bg-page text-text-primary">
+      {/* Branding and reporting-year selection */}
       <header className="border-b border-outline-subtle bg-surface">
         <div className="mx-auto flex max-w-7xl flex-col items-start gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <a className="flex items-center gap-3 no-underline" href="/" aria-label="University Financial Explorer home">
@@ -124,6 +130,7 @@ export default function App() {
         </div>
       </header>
 
+      {/* Introduction and institution search */}
       <main className="mx-auto max-w-7xl px-5 pb-16 pt-10 sm:px-8 sm:pt-14">
         <section className="mb-9 grid min-w-0 items-center gap-8 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <div className="max-w-2xl">
@@ -156,6 +163,7 @@ export default function App() {
           />
         </section>
 
+        {/* The profile handles the selected school's loading, error, and data states. */}
         <FinancialProfile
           financeError={financeError}
           financeRecord={financeRecord}
@@ -166,6 +174,7 @@ export default function App() {
           stateFips={selectedStateFips}
         />
 
+        {/* Credit the data source and clarify how missing values are presented. */}
         <footer className="mt-10 flex flex-col gap-2 border-t border-outline-subtle pt-5 text-xs leading-5 text-text-muted sm:flex-row sm:items-center sm:justify-between">
           <p>
             Data: Integrated Postsecondary Education Data System (IPEDS), via the{' '}
@@ -208,6 +217,7 @@ function FinancialProfile({
   const stateName =
     US_STATES.find((state) => state.fips === stateFips)?.name ?? null
 
+  // The profile below handles the empty, loading, error, unavailable, and data views.
   return (
     <section className="min-h-[510px] min-w-0 overflow-hidden rounded-3xl border border-outline bg-surface shadow-[0_12px_42px_rgba(0,0,0,0.3)]">
       <div className="border-b border-outline-subtle px-6 py-6 sm:px-8">
@@ -298,6 +308,7 @@ function FinancialProfile({
                 UNITID {financeRecord.unitid}
               </span>
             </div>
+            {/* Show unavailable values as text rather than implying they are zero. */}
             <div className="grid gap-3 sm:grid-cols-2">
               {financialMetrics.map((metric, index) => {
                 const value = financeRecord[metric.key]
@@ -330,6 +341,7 @@ function FinancialProfile({
                 </span>
               </p>
             )}
+            {/* Charts are split into a separate bundle and appear only for a valid record. */}
             <Suspense
               fallback={
                 <p className="mt-8 border-t border-outline-subtle pt-5 text-sm text-text-muted">

@@ -58,9 +58,35 @@ src/
 └── main.tsx
 ```
 
-The data flow is **state directory → local search → UNITID finance request →
-financial profile**. API parsing and request limits live in the service layer;
-components receive normalized, typed data.
+## How the app works
+
+The app separates page display, request state, and API communication:
+
+1. [`App.tsx`](./src/App.tsx) assembles the page and keeps the text typed into
+   the institution search. It filters the already-loaded state directory
+   locally, then passes selections and data to the UI components.
+2. [`useUniversityData`](./src/hooks/useUniversityData.ts) owns the selected
+   state, institution, and reporting year. When those selections change, it
+   starts the relevant request and tracks whether it is loading, ready, or has
+   failed. It cancels outdated requests so stale results cannot replace newer
+   selections.
+3. The service functions build endpoint-specific requests:
+   [`getInstitutions`](./src/services/educationData/universities.ts) loads a
+   bounded state directory, and
+   [`getFinanceRecord`](./src/services/educationData/finance.ts) requests one
+   institution's record for one year.
+4. Both services use [`client.ts`](./src/services/educationData/client.ts) for
+   the shared network safeguards: checking the API URL, enforcing time and
+   response-size limits, and parsing JSON. The service then validates the
+   endpoint's response and returns only the fields the app needs.
+5. The hook gives the validated data and request status back to `App.tsx`.
+   Components display the directory, financial figures, or the appropriate
+   empty, loading, and error state.
+
+In short: **selection → request → validation → display**. Shared years, state
+codes, and request limits are defined in
+[`metadata.ts`](./src/services/educationData/metadata.ts); the normalized
+application data shapes are in [`types/education.ts`](./src/types/education.ts).
 
 ## Development
 

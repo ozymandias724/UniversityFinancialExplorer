@@ -5,6 +5,7 @@ export const REPORTING_YEARS = [
 ] as const
 export const DEFAULT_REPORTING_YEAR = 2023
 
+// These hard limits prevent slow or oversized directory/finance responses from reaching the UI.
 // The directory API may return a whole state's records in one response; these are client-side hard stops.
 export const MAX_DIRECTORY_RECORDS = 200
 export const MAX_DIRECTORY_PAGES = 5
@@ -15,6 +16,7 @@ export const API_TIMEOUT_MS = 20_000
 // Keep the full state directory for searching, but avoid rendering an unbounded result list.
 export const SEARCH_RESULT_LIMIT = 8
 
+// Shared state metadata also provides the FIPS values required by the API.
 export interface StateOption {
   name: string
   abbreviation: string

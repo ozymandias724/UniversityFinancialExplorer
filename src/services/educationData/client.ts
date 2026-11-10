@@ -15,6 +15,7 @@ interface ApiJsonResponse {
   bytesRead: number
 }
 
+// Shared network boundary: validate the URL, fetch with a timeout, cap the body size, then parse JSON.
 export async function fetchApiJson(
   url: URL,
   { signal, maximumBytes = MAX_FINANCE_RESPONSE_BYTES, expectedPath }: ApiRequestOptions,
@@ -55,6 +56,7 @@ export async function fetchApiJson(
     throw new Error(`The Education Data API returned HTTP ${response.status}.`)
   }
 
+  // Check the advertised size first when available; the streaming check below is the final safeguard.
   const contentLength = response.headers.get('content-length')
   if (contentLength && Number(contentLength) > maximumBytes) {
     throw new Error(
@@ -108,6 +110,7 @@ export async function fetchApiJson(
   }
 
   try {
+    // Keep the parsed value untrusted until the endpoint-specific service validates its fields.
     const data: unknown = JSON.parse(new TextDecoder().decode(bytes))
     return { data, bytesRead: size }
   } catch (error) {
@@ -124,6 +127,7 @@ export function resolveApiNextUrl(
   currentUrl: URL,
   expectedQuery: ReadonlyArray<readonly [string, string]>,
 ): URL {
+  // Pagination URLs are supplied by the API, so validate them before making another request.
   const nextUrl = new URL(next, currentUrl)
   if (
     nextUrl.origin !== API_ORIGIN ||
