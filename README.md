@@ -22,6 +22,8 @@ The app has no custom backend or database.
 - Browse up to eight matching institutions in a scrollable menu. The menu is
   capped at 18rem high and opens above the search field when the viewport has
   insufficient room below it.
+- Search the state selector and use keyboard-accessible dropdowns for state,
+  reporting year, and institution choices.
 - Use the interface's dark neutral palette (`#111111` background,
   `#F2F0EB` primary text), with green accents and red deficit indicators.
 
@@ -120,6 +122,7 @@ deployment base path.
 - Vite
 - Tailwind CSS
 - Recharts
+- react-select
 - Urban Institute Education Data API (IPEDS)
 
 Historical comparisons, university-system aggregation, user accounts, and a

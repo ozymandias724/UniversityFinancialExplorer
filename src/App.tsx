@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { UniversitySearch } from './components/UniversitySearch'
+import { UniversitySearch } from './components/UniversitySearch/UniversitySearch'
 import { useUniversityData } from './hooks/useUniversityData'
 import {
   DEFAULT_REPORTING_YEAR,
@@ -12,9 +12,13 @@ import type {
   InstitutionSelection,
 } from './types/education'
 
+// Page flow: App coordinates draft selections and submission, UniversitySearch
+// renders the selection controls, and FinancialProfile below renders the result.
+// useUniversityData owns API request state; its services live in services/educationData.
+
 // Load the chart code only when a financial record is ready to display.
 const FinancialBreakdown = lazy(() =>
-  import('./components/FinancialBreakdown').then((module) => ({
+  import('./components/FinancialBreakdown/FinancialBreakdown').then((module) => ({
     default: module.FinancialBreakdown,
   })),
 )
@@ -39,6 +43,7 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 })
 
+// A submitted comparison keeps its own records, separate from the editable slots.
 interface DisplayedComparisonProfile {
   institution: Institution
   reportingYear: number
@@ -46,7 +51,8 @@ interface DisplayedComparisonProfile {
 }
 
 export default function App() {
-  // The search text belongs to this page; the hook manages API data and selections.
+  // Draft search and slot state. Changes here do not automatically replace
+  // the single profile or comparison currently displayed on the page.
   const [query, setQuery] = useState('')
   const [comparisonSlots, setComparisonSlots] = useState<
     [InstitutionSelection, InstitutionSelection]
@@ -55,11 +61,14 @@ export default function App() {
     { institution: null, reportingYear: DEFAULT_REPORTING_YEAR },
   ])
   const [activeSlot, setActiveSlot] = useState<0 | 1>(0)
+  // The mobile comparison tab is independent of the slot being edited.
   const [activeComparisonTab, setActiveComparisonTab] = useState<0 | 1>(0)
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const [displayedComparison, setDisplayedComparison] = useState<
     [DisplayedComparisonProfile, DisplayedComparisonProfile] | null
   >(null)
+  // The hook loads the state/year directory, the submitted single profile,
+  // and a finance availability check for each draft institution/year pair.
   const {
     reportingYear,
     financeReportingYear,
@@ -81,6 +90,7 @@ export default function App() {
   } = useUniversityData(comparisonSlots)
 
   // Filter the already-loaded state directory locally to avoid extra API requests.
+  // All normalized search terms must match the institution's name or city.
   const matchingInstitutions = useMemo(() => {
     // The API has no name filter, so search only the already bounded state directory.
     const searchTerms = normalize(query.trim())
@@ -100,6 +110,8 @@ export default function App() {
     })
   }, [directoryStatus, institutions, query])
 
+  // Changing state, active slot, or its year updates the directory search context.
+  // Clear the old query so it is not carried into the new context.
   const handleStateChange = (fips: number | null) => {
     setQuery('')
     selectState(fips)
@@ -111,6 +123,8 @@ export default function App() {
     setQuery('')
   }
 
+  // A school may appear in both slots for different years, but not the same
+  // school/year pair. The boolean tells UniversitySearch whether to show a warning.
   const handleSlotYearChange = (slot: 0 | 1, year: number): boolean => {
     const otherSelection = comparisonSlots[slot === 0 ? 1 : 0]
     const currentInstitution = comparisonSlots[slot].institution
@@ -133,6 +147,8 @@ export default function App() {
     return true
   }
 
+  // UniversitySearch reports duplicate choices to the user; guard the update
+  // here as well so the draft slots cannot acquire the same school/year pair.
   const handleInstitutionSelect = (institution: Institution) => {
     const currentSelection = comparisonSlots[activeSlot]
     const otherSelection = comparisonSlots[activeSlot === 0 ? 1 : 0]
@@ -158,6 +174,8 @@ export default function App() {
     })
   }
 
+  // Derive submission eligibility from the current drafts and their checks.
+  // Match both ID and year so an older check cannot authorize a newer selection.
   const selectedCount = comparisonSlots.filter(
     (selection) => selection.institution !== null,
   ).length
@@ -174,6 +192,8 @@ export default function App() {
       availability.hasRecord
     )
   })
+  // A single selection uses the hook's profile request. A comparison snapshots
+  // the already-checked records so later draft edits do not change the result.
   const handleSubmitSelection = () => {
     if (selectedCount === 1 && allSelectionsAvailable) {
       const selection = comparisonSlots.find(
@@ -256,6 +276,8 @@ export default function App() {
               filters keep every directory request focused and fast.
             </p>
           </div>
+          {/* UniversitySearch coordinates the search UI. Pass the limited
+              results separately from the total match and directory counts. */}
           <UniversitySearch
             directoryError={directoryError}
             directoryStatus={directoryStatus}
@@ -299,6 +321,8 @@ export default function App() {
                 adjusted for inflation.
               </p>
             </div>
+            {/* Desktop shows both submitted profiles; mobile mounts only the
+                active profile beneath keyboard-accessible comparison tabs. */}
             {isDesktop ? (
               <div className="grid min-w-0 gap-5 lg:grid-cols-2">
                 {displayedComparison.map((profile) => (
@@ -337,6 +361,7 @@ export default function App() {
                         key={`${profile.institution.unitid}-${profile.reportingYear}-tab`}
                         onClick={() => setActiveComparisonTab(tab)}
                         onKeyDown={(event) => {
+                          // Keep selection and keyboard focus together when navigating tabs.
                           if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
                             event.preventDefault()
                             const nextTab = (tab === 0 ? 1 : 0) as 0 | 1
@@ -429,6 +454,8 @@ export default function App() {
   )
 }
 
+// FinancialProfile is shared by the single-result view and the comparison.
+// Compact mode fits a profile into one comparison column or mobile tab.
 interface FinancialProfileProps {
   compact?: boolean
   institutionName: string | null
@@ -581,7 +608,8 @@ function FinancialProfile({
                 </span>
               </p>
             )}
-            {/* Charts are split into a separate bundle and appear only for a valid record. */}
+            {/* FinancialBreakdown/FinancialBreakdown.tsx owns the coverage donut
+                and category charts; load its bundle only for a valid record. */}
             <Suspense
               fallback={
                 <p className="mt-8 border-t border-outline-subtle pt-5 text-sm text-text-muted">
@@ -603,6 +631,7 @@ function FinancialProfile({
   )
 }
 
+// Use the same accent-insensitive, case-insensitive form for queries and names.
 function normalize(value: string): string {
   return value
     .normalize('NFD')
@@ -610,6 +639,7 @@ function normalize(value: string): string {
     .toLocaleLowerCase('en-US')
 }
 
+// Keep the comparison layout in sync when the viewport crosses the breakpoint.
 function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(
     () => window.matchMedia(query).matches,

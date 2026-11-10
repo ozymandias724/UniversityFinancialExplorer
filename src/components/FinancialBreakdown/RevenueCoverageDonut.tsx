@@ -1,112 +1,17 @@
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  LabelList,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
-import type { FinanceRecord } from '../types/education'
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
+import type { FinanceRecord } from '../../types/education'
+import { currencyFormatter, percentageFormatter } from './formatters'
 
-interface FinanceCategory {
-  key: keyof FinanceRecord
-  label: string
-}
-
-interface FinancialBreakdownProps {
+interface RevenueCoverageDonutProps {
   record: FinanceRecord
   compact?: boolean
 }
 
-const revenueCategories = [
-  { key: 'rev_tuition_fees_net', label: 'Net tuition and fees' },
-  { key: 'rev_appropriations_state', label: 'State appropriations' },
-  { key: 'rev_fed_approps_grants', label: 'Federal appropriations and grants' },
-  { key: 'rev_gifts_grants_contracts', label: 'Gifts, grants, and contracts' },
-  { key: 'rev_auxiliary_enterprises_net', label: 'Auxiliary enterprises, net' },
-  { key: 'rev_investment_return', label: 'Investment return' },
-] as const satisfies readonly FinanceCategory[]
-
-const expenseCategories = [
-  { key: 'exp_instruc_total', label: 'Instruction' },
-  { key: 'exp_research_total', label: 'Research' },
-  { key: 'exp_pub_serv_total', label: 'Public service' },
-  { key: 'exp_acad_supp_total', label: 'Academic support' },
-  { key: 'exp_student_serv_total', label: 'Student services' },
-  { key: 'exp_inst_supp_total', label: 'Institutional support' },
-  { key: 'exp_aux_ent_total', label: 'Auxiliary enterprises' },
-] as const satisfies readonly FinanceCategory[]
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
-
-const compactCurrencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  notation: 'compact',
-  maximumFractionDigits: 1,
-})
-
-const percentageFormatter = new Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 1,
-})
-
-export function FinancialBreakdown({
+// Compare reported expenses with revenue; the chart does not calculate net income.
+export function RevenueCoverageDonut({
   record,
   compact = false,
-}: FinancialBreakdownProps) {
-  return (
-    <section className="mt-8 border-t border-outline-subtle pt-7">
-      <RevenueCoverageDonut compact={compact} record={record} />
-
-      <div className="mb-5">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-accent">
-          Where the money comes from and goes
-        </p>
-        <h3 className="text-lg font-semibold tracking-tight text-text-primary">
-          Selected reported categories
-        </h3>
-        <p className="mt-2 text-sm leading-6 text-text-secondary">
-          These categories are not a complete breakdown and should not be added
-          together as totals. A missing value means it was not reported.
-        </p>
-      </div>
-
-      <div className={`grid gap-4 ${compact ? '' : 'xl:grid-cols-2'}`}>
-        <CategoryChart
-          categories={revenueCategories}
-          color="#5a8963"
-          record={record}
-          title="Revenue"
-        />
-        <CategoryChart
-          categories={expenseCategories}
-          color="#7595ad"
-          record={record}
-          title="Expenses"
-        />
-      </div>
-
-      <p className="mt-4 rounded-xl bg-surface-inset px-4 py-3 text-xs leading-5 text-text-muted">
-        Investment returns can include valuation changes, so they may not
-        represent recurring revenue. Values are shown as reported by IPEDS.
-      </p>
-    </section>
-  )
-}
-
-function RevenueCoverageDonut({
-  record,
-  compact = false,
-}: FinancialBreakdownProps) {
+}: RevenueCoverageDonutProps) {
   const revenue = record.total_revenues_additions
 
   if (
@@ -267,105 +172,6 @@ function RevenueCoverageDonut({
         health or reported net income. IPEDS accounting adjustments can make
         revenue less expenses differ from reported net income.
       </p>
-    </section>
-  )
-}
-
-interface CategoryChartProps {
-  title: string
-  color: string
-  categories: readonly FinanceCategory[]
-  record: FinanceRecord
-}
-
-function CategoryChart({ title, color, categories, record }: CategoryChartProps) {
-  const data = categories.flatMap((category) => {
-    const amount = record[category.key]
-    return typeof amount === 'number'
-      ? [{ name: category.label, amount }]
-      : []
-  })
-  const unavailableCategories = categories.filter(
-    (category) => record[category.key] === null,
-  )
-
-  return (
-    <section
-      aria-label={`${title} categories for ${record.year}`}
-      className="rounded-2xl border border-outline bg-surface-inset p-4"
-    >
-      <h4 className="mb-1 text-sm font-semibold text-text-primary">{title}</h4>
-      {data.length > 0 ? (
-        <div
-          aria-label={`${title} by category. Focus the chart and use arrow keys to explore values.`}
-          className="mt-2 h-[240px] w-full"
-          role="img"
-        >
-          <ResponsiveContainer height="100%" width="100%">
-            <BarChart
-              accessibilityLayer
-              data={data}
-              layout="vertical"
-              margin={{ top: 4, right: 48, bottom: 4, left: 0 }}
-            >
-              <CartesianGrid horizontal={false} stroke="#343430" />
-              <XAxis
-                axisLine={false}
-                domain={['auto', 'auto']}
-                tick={{ fill: '#9c9b94', fontSize: 10 }}
-                tickFormatter={(value: number) =>
-                  compactCurrencyFormatter.format(value)
-                }
-                tickLine={false}
-                type="number"
-              />
-              <YAxis
-                axisLine={false}
-                dataKey="name"
-                tick={{ fill: '#c7c5be', fontSize: 11 }}
-                tickLine={false}
-                type="category"
-                width={144}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#191919',
-                  border: '1px solid #343430',
-                  borderRadius: '12px',
-                  color: '#f2f0eb',
-                  fontSize: '12px',
-                }}
-                formatter={(value) =>
-                  currencyFormatter.format(Number(value ?? 0))
-                }
-                labelStyle={{ color: '#f2f0eb', fontWeight: 600 }}
-                cursor={{ fill: '#243c3b', fillOpacity: 0.75 }}
-                wrapperStyle={{ zIndex: 20 }}
-              />
-              <Bar dataKey="amount" fill={color} maxBarSize={20} radius={[0, 5, 5, 0]}>
-                <LabelList
-                  dataKey="amount"
-                  fill="#c7c5be"
-                  formatter={(value) =>
-                    compactCurrencyFormatter.format(Number(value))
-                  }
-                  position="right"
-                  style={{ fontSize: 10 }}
-                />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      ) : (
-        <p className="rounded-xl bg-surface-raised px-3 py-4 text-sm text-text-muted">
-          No category values were reported for this year.
-        </p>
-      )}
-      {unavailableCategories.length > 0 && (
-        <p className="mt-3 text-xs leading-5 text-text-muted">
-          Not reported: {unavailableCategories.map((category) => category.label).join(', ')}.
-        </p>
-      )}
     </section>
   )
 }

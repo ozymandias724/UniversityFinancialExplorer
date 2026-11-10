@@ -42,3 +42,101 @@ input,
 select {
   font: inherit;
 }
+
+/* Shared react-select styling for state, year, and institution controls. */
+.app-select {
+  font-size: 0.875rem;
+}
+
+.app-select__control {
+  min-height: 42px;
+  border: 1px solid var(--color-outline);
+  border-radius: 0.75rem;
+  background: var(--color-surface-inset);
+  color: var(--color-text-primary);
+}
+
+.app-select__control--is-focused {
+  border-color: #527c5d;
+  box-shadow: 0 0 0 4px rgb(82 124 93 / 20%);
+}
+
+.app-select__control--is-disabled {
+  background: var(--color-surface-raised);
+  cursor: not-allowed;
+}
+
+.app-select__value-container {
+  padding: 0.5rem 0.875rem;
+}
+
+.app-select__placeholder,
+.app-select__indicator {
+  color: var(--color-text-muted);
+}
+
+.app-select__input-container,
+.app-select__single-value {
+  color: var(--color-text-primary);
+}
+
+.app-select__indicator {
+  padding: 0.5rem;
+}
+
+.app-select__menu {
+  z-index: 50;
+  margin: 0.5rem 0;
+  max-height: 288px;
+  overflow: hidden;
+  border: 1px solid var(--color-outline);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 55%);
+}
+
+.app-select__menu-list {
+  padding: 0.5rem;
+  overscroll-behavior: contain;
+}
+
+.app-select__option {
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.5rem;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.app-select__option--is-focused {
+  background: var(--color-surface-raised);
+}
+
+.app-select__option--is-selected {
+  background: var(--color-accent-surface);
+}
+
+.app-select__match-count {
+  margin: 0 0 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-outline-subtle);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.app-select--compact {
+  font-size: 0.75rem;
+}
+
+.app-select--compact .app-select__control {
+  min-height: 32px;
+  border-radius: 0.5rem;
+}
+
+.app-select--compact .app-select__value-container {
+  padding: 0.25rem 0.5rem;
+}
+
+.app-select--compact .app-select__indicator {
+  padding: 0.25rem;
+}
