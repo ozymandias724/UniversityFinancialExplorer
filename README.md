@@ -17,7 +17,8 @@ The app has no custom backend or database.
   name filter.
 - Submit one selected institution to see reported financial figures, selected
   revenue and expense categories, and a revenue-coverage donut. Submit two
-  selections to compare their profiles side by side on desktop.
+  selections to compare their profiles side by side on desktop, or switch
+  between them with sticky, keyboard-accessible tabs on mobile.
 - Browse up to eight matching institutions in a scrollable menu. The menu is
   capped at 18rem high and opens above the search field when the viewport has
   insufficient room below it.

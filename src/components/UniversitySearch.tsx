@@ -114,12 +114,12 @@ export function UniversitySearch({
   }, [showResults])
 
   return (
-    <section className="relative z-20 min-w-0 rounded-3xl border border-outline bg-surface p-6 shadow-[0_12px_42px_rgba(0,0,0,0.3)] sm:p-8">
-      <div className="mb-7 flex items-start gap-4">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-accent-surface text-accent">
+    <section className="relative z-20 min-w-0 rounded-3xl border border-outline bg-surface p-5 shadow-[0_12px_42px_rgba(0,0,0,0.3)] sm:p-6">
+      <div className="mb-5 flex items-center gap-3">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-surface text-accent">
           <svg
             aria-hidden="true"
-            className="size-5"
+            className="size-[18px]"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -133,45 +133,56 @@ export function UniversitySearch({
           </svg>
         </div>
         <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-accent">
+          <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">
             Institution directory
           </p>
-          <h2 className="text-xl font-semibold tracking-tight text-text-primary">
+          <h2 className="text-lg font-semibold tracking-tight text-text-primary">
             Find an institution
           </h2>
         </div>
       </div>
 
       <label
-        className="mb-2 block text-sm font-medium text-text-secondary"
+        className="mb-1.5 block text-xs font-medium text-text-secondary"
         htmlFor="state-select"
       >
         Choose a state
       </label>
-      <select
-        className="w-full rounded-xl border border-outline bg-surface-inset px-4 py-3 text-sm text-text-primary outline-none transition focus:border-[#527c5d] focus:ring-4 focus:ring-[#527c5d]/20"
-        id="state-select"
-        value={selectedStateFips ?? ''}
-        onChange={(event) =>
-          onStateChange(event.target.value ? Number(event.target.value) : null)
-        }
-      >
-        <option value="">Select a state or district</option>
-        {US_STATES.map((state) => (
-          <option key={state.fips} value={state.fips}>
-            {state.name}
-          </option>
-        ))}
-      </select>
-      <p className="mt-3 text-xs leading-5 text-text-muted">
-        Results are limited to active, degree-granting, four-year institutions
-        in the selected state. Requests are capped to keep searches responsive.
+      <div className="relative">
+        <select
+          className="w-full appearance-none rounded-xl border border-outline bg-surface-inset px-3.5 py-2.5 pr-10 text-sm text-text-primary outline-none transition focus:border-[#527c5d] focus:ring-4 focus:ring-[#527c5d]/20"
+          id="state-select"
+          value={selectedStateFips ?? ''}
+          onChange={(event) =>
+            onStateChange(event.target.value ? Number(event.target.value) : null)
+          }
+        >
+          <option value="">Select a state or district</option>
+          {US_STATES.map((state) => (
+            <option key={state.fips} value={state.fips}>
+              {state.name}
+            </option>
+          ))}
+        </select>
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-text-muted"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+        </svg>
+      </div>
+      <p className="mt-2 text-[11px] leading-4 text-text-muted">
+        Active, degree-granting four-year institutions in the selected state.
       </p>
 
-      <div className="my-6 h-px bg-outline-subtle" />
+      <div className="my-4 h-px bg-outline-subtle" />
 
       <label
-        className="mb-2 block text-sm font-medium text-text-secondary"
+        className="mb-1.5 block text-xs font-medium text-text-secondary"
         htmlFor="institution-search"
       >
         Search by name or city
@@ -203,7 +214,7 @@ export function UniversitySearch({
         <input
           aria-controls="institution-results"
           aria-expanded={showResults}
-          className="w-full rounded-xl border border-outline bg-surface-inset py-3 pl-11 pr-4 text-sm text-text-primary outline-none transition placeholder:text-text-muted focus:border-[#527c5d] focus:ring-4 focus:ring-[#527c5d]/20 disabled:cursor-not-allowed disabled:bg-surface-raised"
+          className="w-full rounded-xl border border-outline bg-surface-inset py-2.5 pl-10 pr-4 text-sm text-text-primary outline-none transition placeholder:text-text-muted focus:border-[#527c5d] focus:ring-4 focus:ring-[#527c5d]/20 disabled:cursor-not-allowed disabled:bg-surface-raised"
           disabled={selectedStateFips === null || directoryStatus !== 'ready'}
           id="institution-search"
           onChange={(event) => {
@@ -344,14 +355,14 @@ export function UniversitySearch({
         )}
       </div>
 
-      <div className="mt-6 border-t border-outline-subtle pt-5">
-        <div className="mb-3 flex items-baseline justify-between gap-3">
+      <div className="mt-4 border-t border-outline-subtle pt-4">
+        <div className="mb-2.5 flex items-baseline justify-between gap-3">
           <h3 className="text-sm font-semibold text-text-primary">
             Your selections
           </h3>
           <p className="text-xs text-text-muted">Choose up to 2 institutions</p>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {([0, 1] as const).map((slot) => {
             const selection = selectedInstitutions[slot]
             const institution = selection.institution
@@ -368,7 +379,7 @@ export function UniversitySearch({
             const isActive = activeSlot === slot
             return (
               <div
-                className={`min-w-0 rounded-xl border p-3 ${
+                className={`min-w-0 rounded-xl border p-2.5 ${
                   isActive
                     ? 'border-accent-outline bg-accent-surface'
                     : 'border-outline-subtle bg-surface-inset'
@@ -378,27 +389,28 @@ export function UniversitySearch({
                 <p className="text-xs font-semibold uppercase tracking-wide text-accent">
                   Institution {slot + 1}
                 </p>
-                <label className="mt-2 block text-xs font-medium text-text-secondary">
+                <label className="sr-only" htmlFor={`slot-${slot}-year`}>
                   Reporting year
-                  <select
-                    aria-label={`Institution ${slot + 1} reporting year`}
-                    className="mt-1 w-full rounded-lg border border-outline bg-surface-inset px-2 py-2 text-sm text-text-primary outline-none focus:border-[#527c5d] focus:ring-2 focus:ring-[#527c5d]/20"
-                    onChange={(event) => {
-                      const accepted = onSlotYearChange(
-                        slot,
-                        Number(event.target.value),
-                      )
-                      setDuplicateSelection(!accepted)
-                    }}
-                    value={selection.reportingYear}
-                  >
-                    {REPORTING_YEARS.map((year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
                 </label>
+                <select
+                  aria-label={`Institution ${slot + 1} reporting year`}
+                  className="w-full rounded-lg border border-outline bg-surface-inset px-2 py-1.5 text-xs text-text-primary outline-none focus:border-[#527c5d] focus:ring-2 focus:ring-[#527c5d]/20"
+                  id={`slot-${slot}-year`}
+                  onChange={(event) => {
+                    const accepted = onSlotYearChange(
+                      slot,
+                      Number(event.target.value),
+                    )
+                    setDuplicateSelection(!accepted)
+                  }}
+                  value={selection.reportingYear}
+                >
+                  {REPORTING_YEARS.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
                 <button
                   aria-pressed={isActive}
                   className="mt-2 w-full text-left focus:outline-none focus:ring-2 focus:ring-[#6c9274]"
@@ -486,13 +498,13 @@ export function UniversitySearch({
           </p>
         )}
 
-        <p className="mt-3 text-xs leading-5 text-text-muted">
-          Select a school above to add it to the active institution slot. Your
-          current profile stays unchanged until you submit.
+        <p className="mt-2.5 text-[11px] leading-4 text-text-muted">
+          Choose a slot, search for a school, then submit. Your current profile
+          stays unchanged until then.
         </p>
 
         <button
-          className="mt-4 w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-[#111111] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-3 w-full rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-[#111111] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           disabled={selectedCount === 0 || !allSelectionsAvailable}
           onClick={onSubmitSelection}
           type="button"
@@ -501,14 +513,14 @@ export function UniversitySearch({
         </button>
 
         {selectedCount === 2 && (
-          <p className="mt-2 text-center text-xs text-text-muted" role="status">
+          <p className="mt-1.5 text-center text-[11px] text-text-muted" role="status">
             {allSelectionsAvailable
               ? 'Both selections have available data. Submit to compare them.'
               : 'Both selections need available data before comparison.'}
           </p>
         )}
         {selectedCount === 1 && displayedInstitutionName && (
-          <p className="mt-2 text-center text-xs text-text-muted" role="status">
+          <p className="mt-1.5 text-center text-[11px] text-text-muted" role="status">
             Displaying {displayedInstitutionName} ({displayedReportingYear});
             submit to update the profile.
           </p>

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { UniversitySearch } from './components/UniversitySearch'
 import { useUniversityData } from './hooks/useUniversityData'
 import {
@@ -55,6 +55,8 @@ export default function App() {
     { institution: null, reportingYear: DEFAULT_REPORTING_YEAR },
   ])
   const [activeSlot, setActiveSlot] = useState<0 | 1>(0)
+  const [activeComparisonTab, setActiveComparisonTab] = useState<0 | 1>(0)
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
   const [displayedComparison, setDisplayedComparison] = useState<
     [DisplayedComparisonProfile, DisplayedComparisonProfile] | null
   >(null)
@@ -106,7 +108,7 @@ export default function App() {
   const handleSlotChange = (slot: 0 | 1) => {
     setActiveSlot(slot)
     selectReportingYear(comparisonSlots[slot].reportingYear)
-    handleStateChange(null)
+    setQuery('')
   }
 
   const handleSlotYearChange = (slot: 0 | 1, year: number): boolean => {
@@ -127,7 +129,7 @@ export default function App() {
     })
     setActiveSlot(slot)
     selectReportingYear(year)
-    handleStateChange(null)
+    setQuery('')
     return true
   }
 
@@ -198,6 +200,7 @@ export default function App() {
       })
       if (profiles[0] && profiles[1]) {
         setDisplayedComparison([profiles[0], profiles[1]])
+        setActiveComparisonTab(0)
       }
     }
   }
@@ -296,20 +299,102 @@ export default function App() {
                 adjusted for inflation.
               </p>
             </div>
-            <div className="grid min-w-0 gap-5 lg:grid-cols-2">
-              {displayedComparison.map((profile) => (
-                <FinancialProfile
-                  compact
-                  financeError={null}
-                  financeRecord={profile.financeRecord}
-                  financeStatus="ready"
-                  institutionName={profile.institution.name}
-                  key={`${profile.institution.unitid}-${profile.reportingYear}`}
-                  reportingYear={profile.reportingYear}
-                  stateFips={null}
-                />
-              ))}
-            </div>
+            {isDesktop ? (
+              <div className="grid min-w-0 gap-5 lg:grid-cols-2">
+                {displayedComparison.map((profile) => (
+                  <FinancialProfile
+                    compact
+                    financeError={null}
+                    financeRecord={profile.financeRecord}
+                    financeStatus="ready"
+                    institutionName={profile.institution.name}
+                    key={`${profile.institution.unitid}-${profile.reportingYear}`}
+                    reportingYear={profile.reportingYear}
+                    stateFips={null}
+                  />
+                ))}
+              </div>
+            ) : (
+              <>
+                <div
+                  aria-label="Compared institution profiles"
+                  className="sticky top-0 z-30 -mx-5 mb-4 grid grid-cols-2 gap-2 border-b border-outline-subtle bg-page/95 px-5 py-3 shadow-[0_8px_20px_rgba(0,0,0,0.2)] backdrop-blur sm:-mx-8 sm:px-8"
+                  role="tablist"
+                >
+                  {displayedComparison.map((profile, index) => {
+                    const tab = index as 0 | 1
+                    const selected = activeComparisonTab === tab
+                    return (
+                      <button
+                        aria-controls={`comparison-panel-${tab + 1}`}
+                        aria-selected={selected}
+                        className={`min-w-0 rounded-lg border px-3 py-2 text-left text-sm transition focus:outline-none focus:ring-2 focus:ring-[#6c9274] ${
+                          selected
+                            ? 'border-accent-outline bg-accent-surface text-text-primary'
+                            : 'border-transparent text-text-muted hover:bg-surface-raised'
+                        }`}
+                        id={`comparison-tab-${tab + 1}`}
+                        key={`${profile.institution.unitid}-${profile.reportingYear}-tab`}
+                        onClick={() => setActiveComparisonTab(tab)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+                            event.preventDefault()
+                            const nextTab = (tab === 0 ? 1 : 0) as 0 | 1
+                            setActiveComparisonTab(nextTab)
+                            document
+                              .getElementById(`comparison-tab-${nextTab + 1}`)
+                              ?.focus()
+                          } else if (event.key === 'Home' || event.key === 'End') {
+                            event.preventDefault()
+                            const nextTab = event.key === 'Home' ? 0 : 1
+                            setActiveComparisonTab(nextTab)
+                            document
+                              .getElementById(`comparison-tab-${nextTab + 1}`)
+                              ?.focus()
+                          }
+                        }}
+                        role="tab"
+                        tabIndex={selected ? 0 : -1}
+                        type="button"
+                      >
+                        <span className="block truncate font-semibold">
+                          {profile.institution.name}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-text-muted">
+                          {profile.reportingYear}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+                {displayedComparison.map((profile, index) => {
+                  const tab = index as 0 | 1
+                  return (
+                    <div
+                      aria-labelledby={`comparison-tab-${tab + 1}`}
+                      className="min-w-0"
+                      id={`comparison-panel-${tab + 1}`}
+                      key={`${profile.institution.unitid}-${profile.reportingYear}-panel`}
+                      role="tabpanel"
+                      tabIndex={0}
+                      hidden={activeComparisonTab !== tab}
+                    >
+                      {activeComparisonTab === tab && (
+                        <FinancialProfile
+                          compact
+                          financeError={null}
+                          financeRecord={profile.financeRecord}
+                          financeStatus="ready"
+                          institutionName={profile.institution.name}
+                          reportingYear={profile.reportingYear}
+                          stateFips={null}
+                        />
+                      )}
+                    </div>
+                  )
+                })}
+              </>
+            )}
           </section>
         ) : (
           <FinancialProfile
@@ -523,4 +608,20 @@ function normalize(value: string): string {
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .toLocaleLowerCase('en-US')
+}
+
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(
+    () => window.matchMedia(query).matches,
+  )
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(query)
+    const updateMatches = () => setMatches(mediaQuery.matches)
+    updateMatches()
+    mediaQuery.addEventListener('change', updateMatches)
+    return () => mediaQuery.removeEventListener('change', updateMatches)
+  }, [query])
+
+  return matches
 }
